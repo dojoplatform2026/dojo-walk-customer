@@ -50,6 +50,18 @@ class _RateWalkerScreenState
   }
 
   Future<void> _loadBooking() async {
+    final user = _auth.currentUser;
+
+    if (user == null) {
+      if (!mounted) return;
+
+      setState(() {
+        _isLoading = false;
+      });
+
+      return;
+    }
+
     try {
       final booking = await _firestore
           .collection('bookings')
@@ -62,10 +74,33 @@ class _RateWalkerScreenState
         setState(() {
           _isLoading = false;
         });
+
         return;
       }
 
       final data = booking.data() ?? {};
+
+      final customerId =
+          data['customerId'] as String?;
+
+      if (customerId != user.uid) {
+        setState(() {
+          _isLoading = false;
+        });
+
+        return;
+      }
+
+      final status =
+          data['status'] as String? ?? '';
+
+      if (status != 'completed') {
+        setState(() {
+          _isLoading = false;
+        });
+
+        return;
+      }
 
       final existingRating =
           (data['rating'] as num?)?.toInt() ?? 0;
@@ -73,13 +108,18 @@ class _RateWalkerScreenState
       final walkerId =
           data['walkerId'] as String?;
 
-      final hasRating = existingRating >= 1 &&
+      final hasRating =
+          existingRating >= 1 &&
           existingRating <= 5;
 
       setState(() {
-        _rating = hasRating ? existingRating : 0;
+        _rating =
+            hasRating ? existingRating : 0;
+
         _alreadyRated = hasRating;
+
         _walkerId = walkerId;
+
         _isLoading = false;
 
         if (hasRating) {
@@ -88,13 +128,15 @@ class _RateWalkerScreenState
         }
       });
     } catch (e) {
+      debugPrint(
+        'Load rating error: $e',
+      );
+
       if (!mounted) return;
 
       setState(() {
         _isLoading = false;
       });
-
-      debugPrint('Load rating error: $e');
     }
   }
 
@@ -128,10 +170,31 @@ class _RateWalkerScreenState
           await bookingRef.get();
 
       if (!booking.exists) {
-        throw StateError('Booking not found.');
+        throw StateError(
+          'Booking not found.',
+        );
       }
 
-      final data = booking.data() ?? {};
+      final data =
+          booking.data() ?? {};
+
+      final customerId =
+          data['customerId'] as String?;
+
+      if (customerId != user.uid) {
+        throw StateError(
+          'You are not allowed to rate this booking.',
+        );
+      }
+
+      final status =
+          data['status'] as String? ?? '';
+
+      if (status != 'completed') {
+        throw StateError(
+          'Only completed walks can be rated.',
+        );
+      }
 
       final existingRating =
           (data['rating'] as num?)?.toInt() ?? 0;
@@ -154,38 +217,51 @@ class _RateWalkerScreenState
         return;
       }
 
+      final walkerId =
+          _walkerId ?? data['walkerId'] as String?;
+
       final review =
           _commentController.text.trim();
 
-      await bookingRef.update({
-        'rating': _rating,
-        'review': review,
-        'ratedBy': user.uid,
-        'walkerId': _walkerId ??
-            data['walkerId'],
-        'ratedAt':
-            FieldValue.serverTimestamp(),
-        'updatedAt':
-            FieldValue.serverTimestamp(),
-      });
+      final batch =
+          _firestore.batch();
 
-      // Also keep a separate review document.
-      // This makes future review/rating
-      // screens easier to build.
-      await _firestore
+      // Update rating inside booking.
+      batch.update(
+        bookingRef,
+        {
+          'rating': _rating,
+          'review': review,
+          'ratedBy': user.uid,
+          'walkerId': walkerId,
+          'ratedAt':
+              FieldValue.serverTimestamp(),
+          'updatedAt':
+              FieldValue.serverTimestamp(),
+        },
+      );
+
+      // Create separate review document.
+      final reviewRef = _firestore
           .collection('walker_reviews')
-          .doc(widget.bookingId)
-          .set({
-        'bookingId': widget.bookingId,
-        'customerId': user.uid,
-        'walkerId': _walkerId ??
-            data['walkerId'],
-        'walkerName': widget.walkerName,
-        'rating': _rating,
-        'review': review,
-        'createdAt':
-            FieldValue.serverTimestamp(),
-      });
+          .doc(widget.bookingId);
+
+      batch.set(
+        reviewRef,
+        {
+          'bookingId': widget.bookingId,
+          'customerId': user.uid,
+          'walkerId': walkerId,
+          'walkerName': widget.walkerName,
+          'rating': _rating,
+          'review': review,
+          'createdAt':
+              FieldValue.serverTimestamp(),
+        },
+      );
+
+      // Both writes succeed or both fail.
+      await batch.commit();
 
       if (!mounted) return;
 
@@ -202,6 +278,10 @@ class _RateWalkerScreenState
         (route) => route.isFirst,
       );
     } catch (e) {
+      debugPrint(
+        'Rating submission error: $e',
+      );
+
       if (!mounted) return;
 
       setState(() {
@@ -211,8 +291,6 @@ class _RateWalkerScreenState
       _showMessage(
         'Could not submit your rating. Please try again.',
       );
-
-      debugPrint('Rating submission error: $e');
     }
   }
 
@@ -223,7 +301,8 @@ class _RateWalkerScreenState
       builder: (context) {
         return AlertDialog(
           shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(22),
+            borderRadius:
+                BorderRadius.circular(22),
           ),
           title: const Text(
             'Thank you! ⭐',
@@ -257,7 +336,8 @@ class _RateWalkerScreenState
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
         content: Text(message),
-        behavior: SnackBarBehavior.floating,
+        behavior:
+            SnackBarBehavior.floating,
       ),
     );
   }
@@ -270,14 +350,18 @@ class _RateWalkerScreenState
         backgroundColor:
             DojoWalkTheme.background,
         appBar: AppBar(
-          title: const Text('Rate Your Walk'),
+          title: const Text(
+            'Rate Your Walk',
+          ),
           automaticallyImplyLeading: false,
         ),
         body: SafeArea(
           child: _isLoading
               ? const Center(
-                  child: CircularProgressIndicator(
-                    color: DojoWalkTheme.primary,
+                  child:
+                      CircularProgressIndicator(
+                    color:
+                        DojoWalkTheme.primary,
                   ),
                 )
               : _alreadyRated
@@ -286,9 +370,11 @@ class _RateWalkerScreenState
                       walkerName:
                           widget.walkerName,
                       onDone: () {
-                        Navigator.of(context)
-                            .popUntil(
-                          (route) => route.isFirst,
+                        Navigator.of(
+                          context,
+                        ).popUntil(
+                          (route) =>
+                              route.isFirst,
                         );
                       },
                     )
@@ -300,12 +386,14 @@ class _RateWalkerScreenState
                           _commentController,
                       isSubmitting:
                           _isSubmitting,
-                      onRatingChanged: (rating) {
+                      onRatingChanged:
+                          (rating) {
                         setState(() {
                           _rating = rating;
                         });
                       },
-                      onSubmit: _submitRating,
+                      onSubmit:
+                          _submitRating,
                     ),
         ),
       ),
@@ -313,7 +401,8 @@ class _RateWalkerScreenState
   }
 }
 
-class _RatingForm extends StatelessWidget {
+class _RatingForm
+    extends StatelessWidget {
   const _RatingForm({
     required this.walkerName,
     required this.rating,
@@ -327,13 +416,15 @@ class _RatingForm extends StatelessWidget {
   final int rating;
   final TextEditingController controller;
   final bool isSubmitting;
-  final ValueChanged<int> onRatingChanged;
+  final ValueChanged<int>
+      onRatingChanged;
   final VoidCallback onSubmit;
 
   @override
   Widget build(BuildContext context) {
     return SingleChildScrollView(
-      padding: const EdgeInsets.fromLTRB(
+      padding:
+          const EdgeInsets.fromLTRB(
         24,
         24,
         24,
@@ -350,8 +441,10 @@ class _RatingForm extends StatelessWidget {
               shape: BoxShape.circle,
             ),
             child: const Icon(
-              Icons.emoji_emotions_rounded,
-              color: DojoWalkTheme.primary,
+              Icons
+                  .emoji_emotions_rounded,
+              color:
+                  DojoWalkTheme.primary,
               size: 58,
             ),
           ),
@@ -360,11 +453,13 @@ class _RatingForm extends StatelessWidget {
 
           const Text(
             'How was your walk?',
-            textAlign: TextAlign.center,
+            textAlign:
+                TextAlign.center,
             style: TextStyle(
               color: DojoWalkTheme.text,
               fontSize: 28,
-              fontWeight: FontWeight.w800,
+              fontWeight:
+                  FontWeight.w800,
             ),
           ),
 
@@ -372,9 +467,11 @@ class _RatingForm extends StatelessWidget {
 
           Text(
             'How was your experience with $walkerName?',
-            textAlign: TextAlign.center,
+            textAlign:
+                TextAlign.center,
             style: const TextStyle(
-              color: DojoWalkTheme.mutedText,
+              color:
+                  DojoWalkTheme.mutedText,
               fontSize: 15,
               height: 1.5,
             ),
@@ -385,29 +482,35 @@ class _RatingForm extends StatelessWidget {
           Row(
             mainAxisAlignment:
                 MainAxisAlignment.center,
-            children: List.generate(
+            children:
+                List.generate(
               5,
               (index) {
                 final star = index + 1;
+
                 final selected =
                     star <= rating;
 
                 return IconButton(
-                  onPressed: isSubmitting
-                      ? null
-                      : () {
-                          onRatingChanged(
-                            star,
-                          );
-                        },
+                  onPressed:
+                      isSubmitting
+                          ? null
+                          : () {
+                              onRatingChanged(
+                                star,
+                              );
+                            },
                   splashRadius: 28,
                   icon: Icon(
                     selected
-                        ? Icons.star_rounded
-                        : Icons.star_border_rounded,
+                        ? Icons
+                            .star_rounded
+                        : Icons
+                            .star_border_rounded,
                     size: 46,
                     color: selected
-                        ? DojoWalkTheme.primary
+                        ? DojoWalkTheme
+                            .primary
                         : const Color(
                             0xFFBDBDBD,
                           ),
@@ -422,25 +525,31 @@ class _RatingForm extends StatelessWidget {
           Text(
             rating == 0
                 ? 'Tap a star to rate'
-                : _ratingLabel(rating),
+                : _ratingLabel(
+                    rating,
+                  ),
             style: const TextStyle(
-              color: DojoWalkTheme.mutedText,
+              color:
+                  DojoWalkTheme.mutedText,
               fontSize: 14,
-              fontWeight: FontWeight.w600,
+              fontWeight:
+                  FontWeight.w600,
             ),
           ),
 
           const SizedBox(height: 28),
 
           Align(
-            alignment: Alignment.centerLeft,
+            alignment:
+                Alignment.centerLeft,
             child: Text(
               'Your feedback',
               style: Theme.of(context)
                   .textTheme
                   .titleMedium
                   ?.copyWith(
-                    fontWeight: FontWeight.w800,
+                    fontWeight:
+                        FontWeight.w800,
                   ),
             ),
           ),
@@ -458,7 +567,8 @@ class _RatingForm extends StatelessWidget {
                 const InputDecoration(
               hintText:
                   'Tell us about your experience (optional)',
-              alignLabelWithHint: true,
+              alignLabelWithHint:
+                  true,
             ),
           ),
 
@@ -468,7 +578,8 @@ class _RatingForm extends StatelessWidget {
             width: double.infinity,
             child: ElevatedButton(
               onPressed:
-                  rating == 0 || isSubmitting
+                  rating == 0 ||
+                          isSubmitting
                       ? null
                       : onSubmit,
               child: isSubmitting
@@ -478,7 +589,8 @@ class _RatingForm extends StatelessWidget {
                       child:
                           CircularProgressIndicator(
                         strokeWidth: 2.5,
-                        color: Colors.white,
+                        color:
+                            Colors.white,
                       ),
                     )
                   : const Text(
@@ -491,9 +603,11 @@ class _RatingForm extends StatelessWidget {
 
           const Text(
             'Your rating is saved securely with this booking.',
-            textAlign: TextAlign.center,
+            textAlign:
+                TextAlign.center,
             style: TextStyle(
-              color: DojoWalkTheme.mutedText,
+              color:
+                  DojoWalkTheme.mutedText,
               fontSize: 12,
             ),
           ),
@@ -520,7 +634,8 @@ class _RatingForm extends StatelessWidget {
   }
 }
 
-class _AlreadyRatedView extends StatelessWidget {
+class _AlreadyRatedView
+    extends StatelessWidget {
   const _AlreadyRatedView({
     required this.rating,
     required this.walkerName,
@@ -535,7 +650,8 @@ class _AlreadyRatedView extends StatelessWidget {
   Widget build(BuildContext context) {
     return Center(
       child: Padding(
-        padding: const EdgeInsets.all(24),
+        padding:
+            const EdgeInsets.all(24),
         child: Column(
           mainAxisAlignment:
               MainAxisAlignment.center,
@@ -543,14 +659,19 @@ class _AlreadyRatedView extends StatelessWidget {
             Container(
               width: 112,
               height: 112,
-              decoration: BoxDecoration(
-                color: DojoWalkTheme.primary
-                    .withValues(alpha: 0.10),
+              decoration:
+                  BoxDecoration(
+                color:
+                    DojoWalkTheme.primary
+                        .withValues(
+                  alpha: 0.10,
+                ),
                 shape: BoxShape.circle,
               ),
               child: const Icon(
                 Icons.star_rounded,
-                color: DojoWalkTheme.primary,
+                color:
+                    DojoWalkTheme.primary,
                 size: 62,
               ),
             ),
@@ -559,11 +680,14 @@ class _AlreadyRatedView extends StatelessWidget {
 
             const Text(
               'Already rated',
-              textAlign: TextAlign.center,
+              textAlign:
+                  TextAlign.center,
               style: TextStyle(
-                color: DojoWalkTheme.text,
+                color:
+                    DojoWalkTheme.text,
                 fontSize: 28,
-                fontWeight: FontWeight.w800,
+                fontWeight:
+                    FontWeight.w800,
               ),
             ),
 
@@ -571,9 +695,11 @@ class _AlreadyRatedView extends StatelessWidget {
 
             Text(
               'You already rated $walkerName for this walk.',
-              textAlign: TextAlign.center,
+              textAlign:
+                  TextAlign.center,
               style: const TextStyle(
-                color: DojoWalkTheme.mutedText,
+                color:
+                    DojoWalkTheme.mutedText,
                 fontSize: 15,
                 height: 1.5,
               ),
@@ -584,13 +710,16 @@ class _AlreadyRatedView extends StatelessWidget {
             Row(
               mainAxisAlignment:
                   MainAxisAlignment.center,
-              children: List.generate(
+              children:
+                  List.generate(
                 5,
                 (index) {
                   return Icon(
                     index < rating
-                        ? Icons.star_rounded
-                        : Icons.star_border_rounded,
+                        ? Icons
+                            .star_rounded
+                        : Icons
+                            .star_border_rounded,
                     size: 36,
                     color:
                         DojoWalkTheme.primary,
