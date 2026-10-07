@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 import '../../app/theme.dart';
 import '../booking/my_bookings_screen.dart';
 import '../booking/walk_service_screen.dart';
+import '../pets/my_pets_screen.dart';
 import '../profile/profile_screen.dart';
 
 class HomeScreen extends StatelessWidget {
@@ -21,6 +22,9 @@ class HomeScreen extends StatelessWidget {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
+              // ─────────────────────────────
+              // HEADER
+              // ─────────────────────────────
               Row(
                 children: [
                   Expanded(
@@ -31,8 +35,7 @@ class HomeScreen extends StatelessWidget {
                         const Text(
                           'Good morning 👋',
                           style: TextStyle(
-                            color:
-                                DojoWalkTheme.mutedText,
+                            color: DojoWalkTheme.mutedText,
                             fontSize: 14,
                             fontWeight: FontWeight.w500,
                           ),
@@ -49,6 +52,8 @@ class HomeScreen extends StatelessWidget {
                       ],
                     ),
                   ),
+
+                  // Notifications
                   Container(
                     width: 48,
                     height: 48,
@@ -67,6 +72,9 @@ class HomeScreen extends StatelessWidget {
 
               const SizedBox(height: 26),
 
+              // ─────────────────────────────
+              // BOOK A WALK HERO
+              // ─────────────────────────────
               Container(
                 width: double.infinity,
                 padding: const EdgeInsets.all(22),
@@ -88,7 +96,9 @@ class HomeScreen extends StatelessWidget {
                         fontWeight: FontWeight.w800,
                       ),
                     ),
+
                     const SizedBox(height: 10),
+
                     const Text(
                       'Book a trusted walker in just a few taps.',
                       style: TextStyle(
@@ -97,7 +107,9 @@ class HomeScreen extends StatelessWidget {
                         height: 1.4,
                       ),
                     ),
+
                     const SizedBox(height: 20),
+
                     SizedBox(
                       height: 50,
                       child: ElevatedButton(
@@ -139,6 +151,9 @@ class HomeScreen extends StatelessWidget {
 
               const SizedBox(height: 28),
 
+              // ─────────────────────────────
+              // QUICK ACTIONS
+              // ─────────────────────────────
               const Text(
                 'Quick actions',
                 style: TextStyle(
@@ -150,21 +165,35 @@ class HomeScreen extends StatelessWidget {
 
               const SizedBox(height: 14),
 
+              // Row 1
               Row(
                 children: [
                   Expanded(
                     child: _ActionCard(
                       icon: Icons.pets_rounded,
                       title: 'My Pets',
-                      onTap: () {},
+                      onTap: () {
+                        Navigator.push(
+                          context,
+                          MaterialPageRoute(
+                            builder: (_) =>
+                                const MyPetsScreen(),
+                          ),
+                        );
+                      },
                     ),
                   ),
+
                   const SizedBox(width: 12),
+
                   Expanded(
                     child: _ActionCard(
-                      icon: Icons.location_on_outlined,
+                      icon:
+                          Icons.location_on_outlined,
                       title: 'Addresses',
-                      onTap: () {},
+                      onTap: () {
+                        // Addresses will be connected next.
+                      },
                     ),
                   ),
                 ],
@@ -172,6 +201,7 @@ class HomeScreen extends StatelessWidget {
 
               const SizedBox(height: 12),
 
+              // Row 2
               Row(
                 children: [
                   Expanded(
@@ -190,7 +220,9 @@ class HomeScreen extends StatelessWidget {
                       },
                     ),
                   ),
+
                   const SizedBox(width: 12),
+
                   Expanded(
                     child: _ActionCard(
                       icon:
@@ -212,6 +244,9 @@ class HomeScreen extends StatelessWidget {
 
               const SizedBox(height: 28),
 
+              // ─────────────────────────────
+              // TRUST CARD
+              // ─────────────────────────────
               Container(
                 width: double.infinity,
                 padding: const EdgeInsets.all(18),
@@ -226,9 +261,8 @@ class HomeScreen extends StatelessWidget {
                       width: 48,
                       height: 48,
                       decoration: BoxDecoration(
-                        color:
-                            DojoWalkTheme.primary
-                                .withValues(alpha: 0.10),
+                        color: DojoWalkTheme.primary
+                            .withValues(alpha: 0.10),
                         borderRadius:
                             BorderRadius.circular(14),
                       ),
@@ -238,7 +272,9 @@ class HomeScreen extends StatelessWidget {
                             DojoWalkTheme.primary,
                       ),
                     ),
+
                     const SizedBox(width: 14),
+
                     const Expanded(
                       child: Column(
                         crossAxisAlignment:
@@ -254,7 +290,9 @@ class HomeScreen extends StatelessWidget {
                                   FontWeight.w800,
                             ),
                           ),
+
                           SizedBox(height: 4),
+
                           Text(
                             'Safe, reliable and easy to book.',
                             style: TextStyle(
@@ -270,8 +308,12 @@ class HomeScreen extends StatelessWidget {
                 ),
               ),
 
+              // ─────────────────────────────
+              // MOBILE NUMBER
+              // ─────────────────────────────
               if (user?.phoneNumber != null) ...[
                 const SizedBox(height: 18),
+
                 Center(
                   child: Text(
                     user!.phoneNumber!,
@@ -321,7 +363,9 @@ class _ActionCard extends StatelessWidget {
                 color: DojoWalkTheme.primary,
                 size: 27,
               ),
+
               const SizedBox(height: 16),
+
               Text(
                 title,
                 style: const TextStyle(
