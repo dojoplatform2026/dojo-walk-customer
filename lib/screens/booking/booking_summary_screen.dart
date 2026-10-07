@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import '../../app/theme.dart';
 import '../../models/pickup_address.dart';
 import '../../services/booking_service.dart';
+import 'finding_walker_screen.dart';
 
 class BookingSummaryScreen extends StatefulWidget {
   const BookingSummaryScreen({
@@ -58,22 +59,15 @@ class _BookingSummaryScreenState
 
       if (!mounted) return;
 
-      setState(() {
-        _isLoading = false;
-      });
-
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text(
-            'Booking created successfully.',
+      Navigator.pushReplacement(
+        context,
+        MaterialPageRoute(
+          builder: (_) => FindingWalkerScreen(
+            bookingId: bookingId,
+            immediate: widget.immediate,
           ),
         ),
       );
-
-      // Temporary:
-      // Next step will replace this with
-      // the Finding Walker screen.
-      debugPrint('Booking created: $bookingId');
     } catch (e) {
       if (!mounted) return;
 
@@ -82,7 +76,7 @@ class _BookingSummaryScreenState
       });
 
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
+        const SnackBar(
           content: Text(
             'Could not create booking. Please try again.',
           ),
