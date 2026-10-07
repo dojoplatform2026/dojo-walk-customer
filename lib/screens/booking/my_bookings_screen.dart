@@ -1,4 +1,5 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 
 import '../../app/theme.dart';
@@ -8,8 +9,15 @@ class MyBookingsScreen extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final userId =
-        FirebaseFirestore.instance.app.options.projectId;
+    final user = FirebaseAuth.instance.currentUser;
+
+    if (user == null) {
+      return const Scaffold(
+        body: Center(
+          child: Text('Please login to view your bookings.'),
+        ),
+      );
+    }
 
     return Scaffold(
       appBar: AppBar(
@@ -18,7 +26,10 @@ class MyBookingsScreen extends StatelessWidget {
       body: StreamBuilder<QuerySnapshot<Map<String, dynamic>>>(
         stream: FirebaseFirestore.instance
             .collection('bookings')
-            .orderBy('createdAt', descending: true)
+            .where(
+              'customerId',
+              isEqualTo: user.uid,
+            )
             .snapshots(),
         builder: (context, snapshot) {
           if (snapshot.hasError) {
@@ -43,6 +54,28 @@ class MyBookingsScreen extends StatelessWidget {
           }
 
           final docs = snapshot.data?.docs ?? [];
+
+          docs.sort((a, b) {
+            final aTime =
+                a.data()['createdAt'] as Timestamp?;
+
+            final bTime =
+                b.data()['createdAt'] as Timestamp?;
+
+            if (aTime == null && bTime == null) {
+              return 0;
+            }
+
+            if (aTime == null) {
+              return 1;
+            }
+
+            if (bTime == null) {
+              return -1;
+            }
+
+            return bTime.compareTo(aTime);
+          });
 
           if (docs.isEmpty) {
             return const _EmptyBookings();
@@ -105,17 +138,17 @@ class _BookingCard extends StatelessWidget {
     }
   }
 
-  Color _statusBackground(String status) {
-    if (status == 'cancelled') {
-      return Colors.red.withValues(alpha: 0.08);
-    }
+  Color _statusColor(String status) {
+    switch (status) {
+      case 'completed':
+        return Colors.green;
 
-    if (status == 'completed') {
-      return Colors.green.withValues(alpha: 0.08);
-    }
+      case 'cancelled':
+        return Colors.red;
 
-    return DojoWalkTheme.primary
-        .withValues(alpha: 0.08);
+      default:
+        return DojoWalkTheme.primary;
+    }
   }
 
   @override
@@ -140,6 +173,8 @@ class _BookingCard extends StatelessWidget {
     final city =
         address?['city'] as String? ?? '';
 
+    final statusColor = _statusColor(status);
+
     return Container(
       padding: const EdgeInsets.all(18),
       decoration: BoxDecoration(
@@ -150,8 +185,7 @@ class _BookingCard extends StatelessWidget {
         ),
       ),
       child: Column(
-        crossAxisAlignment:
-            CrossAxisAlignment.start,
+        crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Row(
             children: [
@@ -181,8 +215,7 @@ class _BookingCard extends StatelessWidget {
                       petName,
                       style: const TextStyle(
                         fontSize: 17,
-                        fontWeight:
-                            FontWeight.w800,
+                        fontWeight: FontWeight.w800,
                       ),
                     ),
                     const SizedBox(height: 3),
@@ -207,17 +240,17 @@ class _BookingCard extends StatelessWidget {
                   vertical: 6,
                 ),
                 decoration: BoxDecoration(
-                  color: _statusBackground(status),
+                  color: statusColor
+                      .withValues(alpha: 0.09),
                   borderRadius:
                       BorderRadius.circular(10),
                 ),
                 child: Text(
                   _statusText(status),
-                  style: const TextStyle(
-                    color: DojoWalkTheme.primary,
+                  style: TextStyle(
+                    color: statusColor,
                     fontSize: 11,
-                    fontWeight:
-                        FontWeight.w700,
+                    fontWeight: FontWeight.w700,
                   ),
                 ),
               ),
@@ -235,12 +268,14 @@ class _BookingCard extends StatelessWidget {
                   color: DojoWalkTheme.mutedText,
                 ),
                 const SizedBox(width: 8),
-                Text(
-                  '${MaterialLocalizations.of(context).formatMediumDate(date)} • ${TimeOfDay.fromDateTime(date).format(context)}',
-                  style: const TextStyle(
-                    color:
-                        DojoWalkTheme.mutedText,
-                    fontSize: 13,
+                Expanded(
+                  child: Text(
+                    '${MaterialLocalizations.of(context).formatMediumDate(date)} • ${TimeOfDay.fromDateTime(date).format(context)}',
+                    style: const TextStyle(
+                      color:
+                          DojoWalkTheme.mutedText,
+                      fontSize: 13,
+                    ),
                   ),
                 ),
               ],
