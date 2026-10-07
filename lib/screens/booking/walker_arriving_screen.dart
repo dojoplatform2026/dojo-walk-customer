@@ -18,6 +18,7 @@ class WalkerArrivingScreen extends StatelessWidget {
     final service = BookingWatchService();
 
     return Scaffold(
+      backgroundColor: DojoWalkTheme.background,
       appBar: AppBar(
         title: const Text('Your Walk'),
         automaticallyImplyLeading: false,
@@ -28,27 +29,25 @@ class WalkerArrivingScreen extends StatelessWidget {
           stream: service.watchBooking(bookingId),
           builder: (context, snapshot) {
             if (snapshot.hasError) {
-              return const Center(
-                child: Text(
-                  'Unable to load walk details.',
-                ),
+              return _ErrorView(
+                onRetry: () {},
               );
             }
 
+            if (snapshot.connectionState ==
+                    ConnectionState.waiting &&
+                !snapshot.hasData) {
+              return const _LoadingView();
+            }
+
             if (!snapshot.hasData) {
-              return const Center(
-                child: CircularProgressIndicator(
-                  color: DojoWalkTheme.primary,
-                ),
-              );
+              return const _LoadingView();
             }
 
             final booking = snapshot.data!;
 
             if (!booking.exists) {
-              return const Center(
-                child: Text('Booking not found.'),
-              );
+              return const _BookingNotFoundView();
             }
 
             final data = booking.data() ?? {};
@@ -60,12 +59,51 @@ class WalkerArrivingScreen extends StatelessWidget {
                 data['walkerName'] as String? ??
                     'Your walker';
 
-            if (status == 'walk_started') {
-              return _WalkStartedView(
+            final petName =
+                data['petName'] as String? ??
+                    'your dog';
+
+            final addressData =
+                data['pickupAddress']
+                    as Map<String, dynamic>?;
+
+            final address =
+                addressData?['address'] as String? ??
+                    '';
+
+            final city =
+                addressData?['city'] as String? ?? '';
+
+            // Walker is assigned but not yet arriving.
+            if (status == 'walker_assigned') {
+              return _WalkerAssignedView(
                 walkerName: walkerName,
+                petName: petName,
+                bookingId: bookingId,
               );
             }
 
+            // Walker is on the way.
+            if (status == 'walker_arriving') {
+              return _WalkerArrivingView(
+                walkerName: walkerName,
+                petName: petName,
+                bookingId: bookingId,
+                address: address,
+                city: city,
+              );
+            }
+
+            // Walk has started.
+            if (status == 'walk_started') {
+              return _WalkStartedView(
+                walkerName: walkerName,
+                petName: petName,
+                bookingId: bookingId,
+              );
+            }
+
+            // Walk completed.
             if (status == 'completed') {
               return _WalkCompletedView(
                 walkerName: walkerName,
@@ -73,8 +111,13 @@ class WalkerArrivingScreen extends StatelessWidget {
               );
             }
 
-            return _WalkerArrivingView(
-              walkerName: walkerName,
+            // Booking cancelled.
+            if (status == 'cancelled') {
+              return const _CancelledView();
+            }
+
+            return _WaitingView(
+              status: status,
               bookingId: bookingId,
             );
           },
@@ -84,161 +127,44 @@ class WalkerArrivingScreen extends StatelessWidget {
   }
 }
 
-class _WalkerArrivingView extends StatelessWidget {
-  const _WalkerArrivingView({
+class _WalkerAssignedView extends StatelessWidget {
+  const _WalkerAssignedView({
     required this.walkerName,
+    required this.petName,
     required this.bookingId,
   });
 
   final String walkerName;
+  final String petName;
   final String bookingId;
 
   @override
   Widget build(BuildContext context) {
-    return SingleChildScrollView(
-      padding: const EdgeInsets.all(20),
+    return _BaseWalkLayout(
+      icon: Icons.person_rounded,
+      title: 'Walker assigned!',
+      message:
+          '$walkerName is assigned to walk $petName.',
       child: Column(
-        crossAxisAlignment:
-            CrossAxisAlignment.start,
         children: [
-          Container(
-            width: double.infinity,
-            height: 220,
-            decoration: BoxDecoration(
-              color: DojoWalkTheme.primary
-                  .withValues(alpha: 0.08),
-              borderRadius:
-                  BorderRadius.circular(24),
-            ),
-            child: const Center(
-              child: Icon(
-                Icons.directions_walk_rounded,
-                size: 90,
-                color: DojoWalkTheme.primary,
-              ),
-            ),
+          _InfoCard(
+            icon: Icons.person_rounded,
+            title: 'Your walker',
+            value: walkerName,
           ),
-
-          const SizedBox(height: 24),
-
-          const Text(
-            'Your walker is arriving',
-            style: TextStyle(
-              fontSize: 28,
-              fontWeight: FontWeight.w800,
-            ),
+          const SizedBox(height: 12),
+          _InfoCard(
+            icon: Icons.pets_rounded,
+            title: 'Your dog',
+            value: petName,
           ),
-
-          const SizedBox(height: 8),
-
-          const Text(
-            'Your walker is on the way to the pickup address.',
-            style: TextStyle(
-              color: DojoWalkTheme.mutedText,
-              fontSize: 15,
-              height: 1.5,
-            ),
+          const SizedBox(height: 18),
+          const _StatusBanner(
+            icon: Icons.schedule_rounded,
+            text:
+                'Your walker will start heading to the pickup location soon.',
           ),
-
-          const SizedBox(height: 24),
-
-          Container(
-            width: double.infinity,
-            padding: const EdgeInsets.all(18),
-            decoration: BoxDecoration(
-              color: Colors.white,
-              borderRadius:
-                  BorderRadius.circular(18),
-              border: Border.all(
-                color: const Color(0xFFE8E8E8),
-              ),
-            ),
-            child: Row(
-              children: [
-                Container(
-                  width: 52,
-                  height: 52,
-                  decoration: BoxDecoration(
-                    color: DojoWalkTheme.primary
-                        .withValues(alpha: 0.10),
-                    shape: BoxShape.circle,
-                  ),
-                  child: const Icon(
-                    Icons.person_rounded,
-                    color: DojoWalkTheme.primary,
-                    size: 28,
-                  ),
-                ),
-
-                const SizedBox(width: 14),
-
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment:
-                        CrossAxisAlignment.start,
-                    children: [
-                      const Text(
-                        'Walker',
-                        style: TextStyle(
-                          color:
-                              DojoWalkTheme.mutedText,
-                          fontSize: 12,
-                        ),
-                      ),
-                      const SizedBox(height: 3),
-                      Text(
-                        walkerName,
-                        style: const TextStyle(
-                          fontSize: 17,
-                          fontWeight:
-                              FontWeight.w800,
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-              ],
-            ),
-          ),
-
-          const SizedBox(height: 14),
-
-          Container(
-            width: double.infinity,
-            padding: const EdgeInsets.all(18),
-            decoration: BoxDecoration(
-              color: DojoWalkTheme.primary
-                  .withValues(alpha: 0.07),
-              borderRadius:
-                  BorderRadius.circular(18),
-            ),
-            child: const Row(
-              children: [
-                Icon(
-                  Icons.location_on_rounded,
-                  color: DojoWalkTheme.primary,
-                ),
-                SizedBox(width: 12),
-                Expanded(
-                  child: Text(
-                    'Pickup location confirmed',
-                    style: TextStyle(
-                      fontSize: 14,
-                      fontWeight:
-                          FontWeight.w700,
-                    ),
-                  ),
-                ),
-                Icon(
-                  Icons.check_circle_rounded,
-                  color: DojoWalkTheme.primary,
-                ),
-              ],
-            ),
-          ),
-
-          const SizedBox(height: 14),
-
+          const SizedBox(height: 18),
           Text(
             'Booking ID: $bookingId',
             style: const TextStyle(
@@ -252,62 +178,191 @@ class _WalkerArrivingView extends StatelessWidget {
   }
 }
 
-class _WalkStartedView extends StatelessWidget {
-  const _WalkStartedView({
+class _WalkerArrivingView extends StatelessWidget {
+  const _WalkerArrivingView({
     required this.walkerName,
+    required this.petName,
+    required this.bookingId,
+    required this.address,
+    required this.city,
   });
 
   final String walkerName;
+  final String petName;
+  final String bookingId;
+  final String address;
+  final String city;
 
   @override
   Widget build(BuildContext context) {
-    return Center(
-      child: Padding(
-        padding: const EdgeInsets.all(24),
-        child: Column(
-          mainAxisAlignment:
-              MainAxisAlignment.center,
-          children: [
-            Container(
-              width: 110,
-              height: 110,
-              decoration: BoxDecoration(
-                color: DojoWalkTheme.primary
-                    .withValues(alpha: 0.10),
-                shape: BoxShape.circle,
-              ),
-              child: const Icon(
+    return SingleChildScrollView(
+      padding: const EdgeInsets.fromLTRB(
+        20,
+        10,
+        20,
+        30,
+      ),
+      child: Column(
+        crossAxisAlignment:
+            CrossAxisAlignment.start,
+        children: [
+          Container(
+            width: double.infinity,
+            height: 190,
+            decoration: BoxDecoration(
+              color: DojoWalkTheme.primary
+                  .withValues(alpha: 0.08),
+              borderRadius:
+                  BorderRadius.circular(24),
+            ),
+            child: const Center(
+              child: Icon(
                 Icons.directions_walk_rounded,
+                size: 86,
                 color: DojoWalkTheme.primary,
-                size: 55,
               ),
             ),
+          ),
 
-            const SizedBox(height: 28),
+          const SizedBox(height: 24),
 
-            const Text(
-              'Walk started!',
-              textAlign: TextAlign.center,
-              style: TextStyle(
-                fontSize: 28,
-                fontWeight:
-                    FontWeight.w800,
-              ),
+          const Text(
+            'Your walker is arriving',
+            style: TextStyle(
+              color: DojoWalkTheme.text,
+              fontSize: 28,
+              fontWeight: FontWeight.w800,
             ),
+          ),
 
-            const SizedBox(height: 10),
+          const SizedBox(height: 8),
 
-            Text(
-              '$walkerName has started the walk with your dog.',
-              textAlign: TextAlign.center,
+          Text(
+            '$walkerName is on the way to pick up $petName.',
+            style: const TextStyle(
+              color: DojoWalkTheme.mutedText,
+              fontSize: 15,
+              height: 1.5,
+            ),
+          ),
+
+          const SizedBox(height: 24),
+
+          _InfoCard(
+            icon: Icons.person_rounded,
+            title: 'Walker',
+            value: walkerName,
+          ),
+
+          const SizedBox(height: 12),
+
+          _InfoCard(
+            icon: Icons.pets_rounded,
+            title: 'Dog',
+            value: petName,
+          ),
+
+          const SizedBox(height: 12),
+
+          _InfoCard(
+            icon: Icons.location_on_rounded,
+            title: 'Pickup location',
+            value: [
+              address,
+              city,
+            ]
+                .where(
+                  (value) => value.trim().isNotEmpty,
+                )
+                .join(', '),
+          ),
+
+          const SizedBox(height: 16),
+
+          const _StatusBanner(
+            icon: Icons.directions_walk_rounded,
+            text:
+                'Your walker is on the way. Please be ready at the pickup location.',
+          ),
+
+          const SizedBox(height: 18),
+
+          Center(
+            child: Text(
+              'Booking ID: $bookingId',
               style: const TextStyle(
                 color: DojoWalkTheme.mutedText,
-                fontSize: 15,
-                height: 1.5,
+                fontSize: 12,
               ),
             ),
-          ],
-        ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _WalkStartedView extends StatelessWidget {
+  const _WalkStartedView({
+    required this.walkerName,
+    required this.petName,
+    required this.bookingId,
+  });
+
+  final String walkerName;
+  final String petName;
+  final String bookingId;
+
+  @override
+  Widget build(BuildContext context) {
+    return _BaseWalkLayout(
+      icon: Icons.directions_walk_rounded,
+      title: 'Walk started!',
+      message:
+          '$walkerName has started the walk with $petName.',
+      child: Column(
+        children: [
+          Container(
+            width: double.infinity,
+            padding: const EdgeInsets.all(18),
+            decoration: BoxDecoration(
+              color: DojoWalkTheme.primary
+                  .withValues(alpha: 0.08),
+              borderRadius:
+                  BorderRadius.circular(18),
+            ),
+            child: const Row(
+              children: [
+                Icon(
+                  Icons.play_circle_fill_rounded,
+                  color: DojoWalkTheme.primary,
+                  size: 30,
+                ),
+                SizedBox(width: 12),
+                Expanded(
+                  child: Text(
+                    'The walk is currently in progress.',
+                    style: TextStyle(
+                      color: DojoWalkTheme.text,
+                      fontSize: 14,
+                      fontWeight: FontWeight.w700,
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ),
+
+          const SizedBox(height: 18),
+
+          Text(
+            'Booking ID: $bookingId',
+            style: const TextStyle(
+              color: DojoWalkTheme.mutedText,
+              fontSize: 12,
+            ),
+          ),
+        ],
       ),
     );
   }
@@ -332,8 +387,8 @@ class _WalkCompletedView extends StatelessWidget {
               MainAxisAlignment.center,
           children: [
             Container(
-              width: 110,
-              height: 110,
+              width: 112,
+              height: 112,
               decoration: BoxDecoration(
                 color: DojoWalkTheme.primary
                     .withValues(alpha: 0.10),
@@ -342,7 +397,7 @@ class _WalkCompletedView extends StatelessWidget {
               child: const Icon(
                 Icons.check_rounded,
                 color: DojoWalkTheme.primary,
-                size: 60,
+                size: 62,
               ),
             ),
 
@@ -352,16 +407,16 @@ class _WalkCompletedView extends StatelessWidget {
               'Walk completed!',
               textAlign: TextAlign.center,
               style: TextStyle(
+                color: DojoWalkTheme.text,
                 fontSize: 28,
-                fontWeight:
-                    FontWeight.w800,
+                fontWeight: FontWeight.w800,
               ),
             ),
 
             const SizedBox(height: 10),
 
             Text(
-              '$walkerName has completed the walk.',
+              '$walkerName has completed your dog’s walk.',
               textAlign: TextAlign.center,
               style: const TextStyle(
                 color: DojoWalkTheme.mutedText,
@@ -370,11 +425,22 @@ class _WalkCompletedView extends StatelessWidget {
               ),
             ),
 
-            const SizedBox(height: 28),
+            const SizedBox(height: 12),
+
+            Text(
+              'Booking ID: $bookingId',
+              textAlign: TextAlign.center,
+              style: const TextStyle(
+                color: DojoWalkTheme.mutedText,
+                fontSize: 12,
+              ),
+            ),
+
+            const SizedBox(height: 30),
 
             SizedBox(
               width: double.infinity,
-              child: ElevatedButton(
+              child: ElevatedButton.icon(
                 onPressed: () {
                   Navigator.pushReplacement(
                     context,
@@ -387,9 +453,415 @@ class _WalkCompletedView extends StatelessWidget {
                     ),
                   );
                 },
-                child: const Text(
+                icon: const Icon(
+                  Icons.star_rounded,
+                ),
+                label: const Text(
                   'Rate Walker',
                 ),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+class _WaitingView extends StatelessWidget {
+  const _WaitingView({
+    required this.status,
+    required this.bookingId,
+  });
+
+  final String status;
+  final String bookingId;
+
+  @override
+  Widget build(BuildContext context) {
+    return Center(
+      child: Padding(
+        padding: const EdgeInsets.all(24),
+        child: Column(
+          mainAxisAlignment:
+              MainAxisAlignment.center,
+          children: [
+            Container(
+              width: 100,
+              height: 100,
+              decoration: BoxDecoration(
+                color: DojoWalkTheme.primary
+                    .withValues(alpha: 0.10),
+                shape: BoxShape.circle,
+              ),
+              child: const Icon(
+                Icons.hourglass_top_rounded,
+                color: DojoWalkTheme.primary,
+                size: 48,
+              ),
+            ),
+
+            const SizedBox(height: 24),
+
+            const Text(
+              'Preparing your walk',
+              textAlign: TextAlign.center,
+              style: TextStyle(
+                color: DojoWalkTheme.text,
+                fontSize: 25,
+                fontWeight: FontWeight.w800,
+              ),
+            ),
+
+            const SizedBox(height: 10),
+
+            const Text(
+              'We are waiting for the next booking update.',
+              textAlign: TextAlign.center,
+              style: TextStyle(
+                color: DojoWalkTheme.mutedText,
+                fontSize: 14,
+                height: 1.5,
+              ),
+            ),
+
+            const SizedBox(height: 16),
+
+            Text(
+              'Status: $status',
+              style: const TextStyle(
+                color: DojoWalkTheme.mutedText,
+                fontSize: 12,
+              ),
+            ),
+
+            const SizedBox(height: 6),
+
+            Text(
+              'Booking ID: $bookingId',
+              style: const TextStyle(
+                color: DojoWalkTheme.mutedText,
+                fontSize: 12,
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+class _StatusBanner extends StatelessWidget {
+  const _StatusBanner({
+    required this.icon,
+    required this.text,
+  });
+
+  final IconData icon;
+  final String text;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: DojoWalkTheme.primary
+            .withValues(alpha: 0.07),
+        borderRadius: BorderRadius.circular(16),
+      ),
+      child: Row(
+        crossAxisAlignment:
+            CrossAxisAlignment.start,
+        children: [
+          Icon(
+            icon,
+            color: DojoWalkTheme.primary,
+            size: 22,
+          ),
+          const SizedBox(width: 11),
+          Expanded(
+            child: Text(
+              text,
+              style: const TextStyle(
+                color: DojoWalkTheme.text,
+                fontSize: 13,
+                fontWeight: FontWeight.w600,
+                height: 1.4,
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _InfoCard extends StatelessWidget {
+  const _InfoCard({
+    required this.icon,
+    required this.title,
+    required this.value,
+  });
+
+  final IconData icon;
+  final String title;
+  final String value;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.all(17),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(18),
+        border: Border.all(
+          color: const Color(0xFFE8E8E8),
+        ),
+      ),
+      child: Row(
+        children: [
+          Container(
+            width: 46,
+            height: 46,
+            decoration: BoxDecoration(
+              color: DojoWalkTheme.primary
+                  .withValues(alpha: 0.09),
+              borderRadius:
+                  BorderRadius.circular(14),
+            ),
+            child: Icon(
+              icon,
+              color: DojoWalkTheme.primary,
+              size: 24,
+            ),
+          ),
+
+          const SizedBox(width: 13),
+
+          Expanded(
+            child: Column(
+              crossAxisAlignment:
+                  CrossAxisAlignment.start,
+              children: [
+                Text(
+                  title,
+                  style: const TextStyle(
+                    color: DojoWalkTheme.mutedText,
+                    fontSize: 12,
+                  ),
+                ),
+                const SizedBox(height: 4),
+                Text(
+                  value.isEmpty
+                      ? 'Not available'
+                      : value,
+                  maxLines: 2,
+                  overflow:
+                      TextOverflow.ellipsis,
+                  style: const TextStyle(
+                    color: DojoWalkTheme.text,
+                    fontSize: 15,
+                    fontWeight: FontWeight.w700,
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _BaseWalkLayout extends StatelessWidget {
+  const _BaseWalkLayout({
+    required this.icon,
+    required this.title,
+    required this.message,
+    required this.child,
+  });
+
+  final IconData icon;
+  final String title;
+  final String message;
+  final Widget child;
+
+  @override
+  Widget build(BuildContext context) {
+    return SingleChildScrollView(
+      padding: const EdgeInsets.fromLTRB(
+        20,
+        30,
+        20,
+        30,
+      ),
+      child: Column(
+        children: [
+          Container(
+            width: 112,
+            height: 112,
+            decoration: BoxDecoration(
+              color: DojoWalkTheme.primary
+                  .withValues(alpha: 0.10),
+              shape: BoxShape.circle,
+            ),
+            child: Icon(
+              icon,
+              color: DojoWalkTheme.primary,
+              size: 55,
+            ),
+          ),
+
+          const SizedBox(height: 26),
+
+          Text(
+            title,
+            textAlign: TextAlign.center,
+            style: const TextStyle(
+              color: DojoWalkTheme.text,
+              fontSize: 28,
+              fontWeight: FontWeight.w800,
+            ),
+          ),
+
+          const SizedBox(height: 10),
+
+          Text(
+            message,
+            textAlign: TextAlign.center,
+            style: const TextStyle(
+              color: DojoWalkTheme.mutedText,
+              fontSize: 15,
+              height: 1.5,
+            ),
+          ),
+
+          const SizedBox(height: 26),
+
+          child,
+        ],
+      ),
+    );
+  }
+}
+
+class _LoadingView extends StatelessWidget {
+  const _LoadingView();
+
+  @override
+  Widget build(BuildContext context) {
+    return const Center(
+      child: CircularProgressIndicator(
+        color: DojoWalkTheme.primary,
+      ),
+    );
+  }
+}
+
+class _ErrorView extends StatelessWidget {
+  const _ErrorView({
+    required this.onRetry,
+  });
+
+  final VoidCallback onRetry;
+
+  @override
+  Widget build(BuildContext context) {
+    return Center(
+      child: Padding(
+        padding: const EdgeInsets.all(24),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            const Icon(
+              Icons.cloud_off_rounded,
+              size: 52,
+              color: DojoWalkTheme.mutedText,
+            ),
+            const SizedBox(height: 16),
+            const Text(
+              'Unable to load walk',
+              style: TextStyle(
+                color: DojoWalkTheme.text,
+                fontSize: 20,
+                fontWeight: FontWeight.w800,
+              ),
+            ),
+            const SizedBox(height: 8),
+            const Text(
+              'Please check your connection and try again.',
+              textAlign: TextAlign.center,
+              style: TextStyle(
+                color: DojoWalkTheme.mutedText,
+              ),
+            ),
+            const SizedBox(height: 20),
+            ElevatedButton(
+              onPressed: onRetry,
+              child: const Text('Try Again'),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+class _BookingNotFoundView
+    extends StatelessWidget {
+  const _BookingNotFoundView();
+
+  @override
+  Widget build(BuildContext context) {
+    return const Center(
+      child: Padding(
+        padding: EdgeInsets.all(24),
+        child: Text(
+          'Booking not found.',
+          style: TextStyle(
+            color: DojoWalkTheme.text,
+            fontSize: 20,
+            fontWeight: FontWeight.w700,
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+class _CancelledView extends StatelessWidget {
+  const _CancelledView();
+
+  @override
+  Widget build(BuildContext context) {
+    return Center(
+      child: Padding(
+        padding: const EdgeInsets.all(24),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            const Icon(
+              Icons.cancel_rounded,
+              size: 60,
+              color: Colors.redAccent,
+            ),
+            const SizedBox(height: 20),
+            const Text(
+              'Booking cancelled',
+              style: TextStyle(
+                color: DojoWalkTheme.text,
+                fontSize: 24,
+                fontWeight: FontWeight.w800,
+              ),
+            ),
+            const SizedBox(height: 8),
+            const Text(
+              'This booking is no longer active.',
+              textAlign: TextAlign.center,
+              style: TextStyle(
+                color: DojoWalkTheme.mutedText,
               ),
             ),
           ],
