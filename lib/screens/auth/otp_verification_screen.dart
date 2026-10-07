@@ -1,14 +1,18 @@
+import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 
 import '../../app/theme.dart';
+import '../../services/auth_service.dart';
 
 class OtpVerificationScreen extends StatefulWidget {
   const OtpVerificationScreen({
     super.key,
     required this.phoneNumber,
+    required this.verificationId,
   });
 
   final String phoneNumber;
+  final String verificationId;
 
   @override
   State<OtpVerificationScreen> createState() =>
@@ -20,6 +24,8 @@ class _OtpVerificationScreenState
   final _formKey = GlobalKey<FormState>();
   final _otpController = TextEditingController();
 
+  final AuthService _authService = AuthService();
+
   bool _isLoading = false;
 
   @override
@@ -29,35 +35,97 @@ class _OtpVerificationScreenState
   }
 
   Future<void> _verifyOtp() async {
-    if (!_formKey.currentState!.validate()) return;
+    if (!_formKey.currentState!.validate()) {
+      return;
+    }
 
     setState(() {
       _isLoading = true;
     });
 
-    // Firebase OTP verification will be connected next.
+    try {
+      await _authService.verifyOtp(
+        verificationId: widget.verificationId,
+        otp: _otpController.text.trim(),
+      );
 
-    await Future.delayed(const Duration(milliseconds: 800));
+      if (!mounted) return;
 
-    if (!mounted) return;
+      setState(() {
+        _isLoading = false;
+      });
 
-    setState(() {
-      _isLoading = false;
-    });
-
-    ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(
-        content: Text(
-          'OTP verification will be connected with Firebase next.',
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text(
+            'Mobile number verified successfully.',
+          ),
         ),
-      ),
-    );
+      );
+
+      // Home screen will be connected next.
+    } on FirebaseAuthException catch (error) {
+      if (!mounted) return;
+
+      setState(() {
+        _isLoading = false;
+      });
+
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(
+            _firebaseErrorMessage(error),
+          ),
+        ),
+      );
+    } catch (error) {
+      if (!mounted) return;
+
+      setState(() {
+        _isLoading = false;
+      });
+
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text(
+            'Verification failed. Please try again.',
+          ),
+        ),
+      );
+    }
+  }
+
+  String _firebaseErrorMessage(
+    FirebaseAuthException error,
+  ) {
+    switch (error.code) {
+      case 'invalid-verification-code':
+        return 'Incorrect OTP. Please check and try again.';
+
+      case 'session-expired':
+        return 'OTP expired. Please request a new OTP.';
+
+      case 'invalid-credential':
+        return 'Invalid OTP. Please request a new OTP.';
+
+      case 'too-many-requests':
+        return 'Too many attempts. Please try again later.';
+
+      case 'network-request-failed':
+        return 'No internet connection. Please try again.';
+
+      default:
+        return error.message ??
+            'OTP verification failed. Please try again.';
+    }
   }
 
   void _resendOtp() {
     ScaffoldMessenger.of(context).showSnackBar(
       const SnackBar(
-        content: Text('OTP resend will be connected next.'),
+        content: Text(
+          'Please go back and request a new OTP.',
+        ),
       ),
     );
   }
@@ -72,7 +140,12 @@ class _OtpVerificationScreenState
       ),
       body: SafeArea(
         child: SingleChildScrollView(
-          padding: const EdgeInsets.fromLTRB(24, 30, 24, 30),
+          padding: const EdgeInsets.fromLTRB(
+            24,
+            30,
+            24,
+            30,
+          ),
           child: Form(
             key: _formKey,
             child: Column(
@@ -176,17 +249,22 @@ class _OtpVerificationScreenState
                   width: double.infinity,
                   height: 56,
                   child: ElevatedButton(
-                    onPressed: _isLoading ? null : _verifyOtp,
+                    onPressed: _isLoading
+                        ? null
+                        : _verifyOtp,
                     child: _isLoading
                         ? const SizedBox(
                             width: 23,
                             height: 23,
-                            child: CircularProgressIndicator(
+                            child:
+                                CircularProgressIndicator(
                               strokeWidth: 2.5,
                               color: Colors.white,
                             ),
                           )
-                        : const Text('Verify & Continue'),
+                        : const Text(
+                            'Verify & Continue',
+                          ),
                   ),
                 ),
 
@@ -194,7 +272,9 @@ class _OtpVerificationScreenState
 
                 Center(
                   child: TextButton(
-                    onPressed: _isLoading ? null : _resendOtp,
+                    onPressed: _isLoading
+                        ? null
+                        : _resendOtp,
                     child: const Text(
                       'Resend OTP',
                       style: TextStyle(
