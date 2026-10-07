@@ -1,24 +1,362 @@
+import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 
 import '../../app/theme.dart';
+import '../addresses/add_address_screen.dart';
 import '../auth/login_screen.dart';
+import '../booking/my_bookings_screen.dart';
+import '../pets/my_pets_screen.dart';
 import 'change_mobile_screen.dart';
 
 class ProfileScreen extends StatelessWidget {
   const ProfileScreen({super.key});
 
-  Future<void> _logout(BuildContext context) async {
-    final confirm = await showDialog<bool>(
+  @override
+  Widget build(BuildContext context) {
+    final user = FirebaseAuth.instance.currentUser;
+
+    if (user == null) {
+      return const Scaffold(
+        body: Center(
+          child: Text('Please login again.'),
+        ),
+      );
+    }
+
+    return Scaffold(
+      backgroundColor: DojoWalkTheme.background,
+      body: SafeArea(
+        child: StreamBuilder<
+            DocumentSnapshot<Map<String, dynamic>>>(
+          stream: FirebaseFirestore.instance
+              .collection('users')
+              .doc(user.uid)
+              .snapshots(),
+          builder: (context, snapshot) {
+            final data = snapshot.data?.data();
+
+            final name =
+                data?['name'] as String? ?? '';
+
+            final age = data?['age'];
+
+            final currentUser =
+                FirebaseAuth.instance.currentUser;
+
+            final phone =
+                currentUser?.phoneNumber ?? '';
+
+            return SingleChildScrollView(
+              padding: const EdgeInsets.fromLTRB(
+                20,
+                20,
+                20,
+                30,
+              ),
+              child: Column(
+                crossAxisAlignment:
+                    CrossAxisAlignment.start,
+                children: [
+                  const Text(
+                    'Profile',
+                    style: TextStyle(
+                      color: DojoWalkTheme.text,
+                      fontSize: 28,
+                      fontWeight: FontWeight.w800,
+                    ),
+                  ),
+
+                  const SizedBox(height: 20),
+
+                  // PROFILE HEADER
+                  Container(
+                    width: double.infinity,
+                    padding: const EdgeInsets.all(22),
+                    decoration: BoxDecoration(
+                      color: DojoWalkTheme.primary,
+                      borderRadius:
+                          BorderRadius.circular(24),
+                    ),
+                    child: Row(
+                      children: [
+                        Container(
+                          width: 64,
+                          height: 64,
+                          decoration:
+                              const BoxDecoration(
+                            color: Colors.white,
+                            shape: BoxShape.circle,
+                          ),
+                          child: const Icon(
+                            Icons.person_rounded,
+                            color:
+                                DojoWalkTheme.primary,
+                            size: 34,
+                          ),
+                        ),
+
+                        const SizedBox(width: 16),
+
+                        Expanded(
+                          child: Column(
+                            crossAxisAlignment:
+                                CrossAxisAlignment.start,
+                            children: [
+                              Text(
+                                name.trim().isEmpty
+                                    ? 'DOJO WALK Customer'
+                                    : name.trim(),
+                                style:
+                                    const TextStyle(
+                                  color: Colors.white,
+                                  fontSize: 21,
+                                  fontWeight:
+                                      FontWeight.w800,
+                                ),
+                              ),
+
+                              const SizedBox(height: 5),
+
+                              Text(
+                                phone.isEmpty
+                                    ? 'Mobile number not available'
+                                    : phone,
+                                style:
+                                    const TextStyle(
+                                  color: Colors.white70,
+                                  fontSize: 13,
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+
+                  const SizedBox(height: 28),
+
+                  const Text(
+                    'Personal Information',
+                    style: TextStyle(
+                      color: DojoWalkTheme.text,
+                      fontSize: 19,
+                      fontWeight: FontWeight.w800,
+                    ),
+                  ),
+
+                  const SizedBox(height: 14),
+
+                  Container(
+                    width: double.infinity,
+                    decoration: BoxDecoration(
+                      color: Colors.white,
+                      borderRadius:
+                          BorderRadius.circular(20),
+                    ),
+                    child: Column(
+                      children: [
+                        _InfoRow(
+                          icon:
+                              Icons.person_outline_rounded,
+                          title: 'Name',
+                          value: name.trim().isEmpty
+                              ? 'Not added'
+                              : name.trim(),
+                        ),
+
+                        const Divider(
+                          height: 1,
+                          indent: 18,
+                          endIndent: 18,
+                        ),
+
+                        _InfoRow(
+                          icon: Icons.cake_outlined,
+                          title: 'Age',
+                          value: age == null
+                              ? 'Not added'
+                              : '$age years',
+                        ),
+
+                        const Divider(
+                          height: 1,
+                          indent: 18,
+                          endIndent: 18,
+                        ),
+
+                        _InfoRow(
+                          icon:
+                              Icons.phone_outlined,
+                          title: 'Mobile',
+                          value: phone.isEmpty
+                              ? 'Not available'
+                              : phone,
+                          onTap: () {
+                            Navigator.push(
+                              context,
+                              MaterialPageRoute(
+                                builder: (_) =>
+                                    const ChangeMobileScreen(),
+                              ),
+                            );
+                          },
+                        ),
+                      ],
+                    ),
+                  ),
+
+                  const SizedBox(height: 28),
+
+                  const Text(
+                    'Your DOJO',
+                    style: TextStyle(
+                      color: DojoWalkTheme.text,
+                      fontSize: 19,
+                      fontWeight: FontWeight.w800,
+                    ),
+                  ),
+
+                  const SizedBox(height: 14),
+
+                  _MenuCard(
+                    icon: Icons.pets_rounded,
+                    title: 'My Pets',
+                    subtitle: 'Manage your dogs',
+                    onTap: () {
+                      Navigator.push(
+                        context,
+                        MaterialPageRoute(
+                          builder: (_) =>
+                              const MyPetsScreen(),
+                        ),
+                      );
+                    },
+                  ),
+
+                  const SizedBox(height: 10),
+
+                  _MenuCard(
+                    icon:
+                        Icons.location_on_outlined,
+                    title: 'Saved Addresses',
+                    subtitle:
+                        'Manage pickup locations',
+                    onTap: () {
+                      Navigator.push(
+                        context,
+                        MaterialPageRoute(
+                          builder: (_) =>
+                              const AddAddressScreen(),
+                        ),
+                      );
+                    },
+                  ),
+
+                  const SizedBox(height: 10),
+
+                  _MenuCard(
+                    icon:
+                        Icons.receipt_long_outlined,
+                    title: 'My Bookings',
+                    subtitle:
+                        'View your walk history',
+                    onTap: () {
+                      Navigator.push(
+                        context,
+                        MaterialPageRoute(
+                          builder: (_) =>
+                              const MyBookingsScreen(),
+                        ),
+                      );
+                    },
+                  ),
+
+                  const SizedBox(height: 28),
+
+                  const Text(
+                    'Support',
+                    style: TextStyle(
+                      color: DojoWalkTheme.text,
+                      fontSize: 19,
+                      fontWeight: FontWeight.w800,
+                    ),
+                  ),
+
+                  const SizedBox(height: 14),
+
+                  _MenuCard(
+                    icon:
+                        Icons.help_outline_rounded,
+                    title: 'Help & Support',
+                    subtitle:
+                        'Need help? We are here.',
+                    onTap: () {},
+                  ),
+
+                  const SizedBox(height: 10),
+
+                  _MenuCard(
+                    icon:
+                        Icons.description_outlined,
+                    title: 'Terms & Privacy',
+                    subtitle:
+                        'App terms and privacy',
+                    onTap: () {},
+                  ),
+
+                  const SizedBox(height: 28),
+
+                  SizedBox(
+                    width: double.infinity,
+                    child: OutlinedButton.icon(
+                      onPressed: () =>
+                          _logout(context),
+                      icon: const Icon(
+                        Icons.logout_rounded,
+                      ),
+                      label: const Text(
+                        'Logout',
+                      ),
+                      style:
+                          OutlinedButton.styleFrom(
+                        foregroundColor:
+                            DojoWalkTheme.text,
+                        minimumSize:
+                            const Size(
+                          double.infinity,
+                          52,
+                        ),
+                        side: const BorderSide(
+                          color: Color(0xFFE0E0E0),
+                        ),
+                        shape:
+                            RoundedRectangleBorder(
+                          borderRadius:
+                              BorderRadius.circular(16),
+                        ),
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            );
+          },
+        ),
+      ),
+    );
+  }
+
+  Future<void> _logout(
+    BuildContext context,
+  ) async {
+    final shouldLogout =
+        await showDialog<bool>(
       context: context,
       builder: (context) {
         return AlertDialog(
-          title: const Text(
-            'Logout?',
-            style: TextStyle(
-              fontWeight: FontWeight.w800,
-            ),
-          ),
+          title: const Text('Logout?'),
           content: const Text(
             'Are you sure you want to logout?',
           ),
@@ -28,23 +366,17 @@ class ProfileScreen extends StatelessWidget {
                   Navigator.pop(context, false),
               child: const Text('Cancel'),
             ),
-            TextButton(
+            FilledButton(
               onPressed: () =>
                   Navigator.pop(context, true),
-              child: const Text(
-                'Logout',
-                style: TextStyle(
-                  color: Colors.red,
-                  fontWeight: FontWeight.w700,
-                ),
-              ),
+              child: const Text('Logout'),
             ),
           ],
         );
       },
     );
 
-    if (confirm != true) return;
+    if (shouldLogout != true) return;
 
     await FirebaseAuth.instance.signOut();
 
@@ -58,283 +390,91 @@ class ProfileScreen extends StatelessWidget {
       (route) => false,
     );
   }
+}
+
+class _InfoRow extends StatelessWidget {
+  const _InfoRow({
+    required this.icon,
+    required this.title,
+    required this.value,
+    this.onTap,
+  });
+
+  final IconData icon;
+  final String title;
+  final String value;
+  final VoidCallback? onTap;
 
   @override
   Widget build(BuildContext context) {
-    final user = FirebaseAuth.instance.currentUser;
-    final phoneNumber =
-        user?.phoneNumber ?? 'No mobile number';
+    return InkWell(
+      onTap: onTap,
+      borderRadius: BorderRadius.circular(20),
+      child: Padding(
+        padding: const EdgeInsets.all(18),
+        child: Row(
+          children: [
+            Icon(
+              icon,
+              color: DojoWalkTheme.primary,
+            ),
 
-    return Scaffold(
-      backgroundColor: DojoWalkTheme.background,
-      appBar: AppBar(
-        title: const Text('Profile'),
-      ),
-      body: SafeArea(
-        child: SingleChildScrollView(
-          padding: const EdgeInsets.fromLTRB(
-            20,
-            10,
-            20,
-            30,
-          ),
-          child: Column(
-            crossAxisAlignment:
-                CrossAxisAlignment.start,
-            children: [
-              Container(
-                width: double.infinity,
-                padding: const EdgeInsets.all(22),
-                decoration: BoxDecoration(
-                  color: DojoWalkTheme.primary,
-                  borderRadius:
-                      BorderRadius.circular(24),
-                ),
-                child: Row(
-                  children: [
-                    Container(
-                      width: 64,
-                      height: 64,
-                      decoration: BoxDecoration(
-                        color: Colors.white,
-                        borderRadius:
-                            BorderRadius.circular(20),
-                      ),
-                      child: const Icon(
-                        Icons.person_rounded,
-                        color:
-                            DojoWalkTheme.primary,
-                        size: 34,
-                      ),
+            const SizedBox(width: 14),
+
+            Expanded(
+              child: Column(
+                crossAxisAlignment:
+                    CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    title,
+                    style: const TextStyle(
+                      color:
+                          DojoWalkTheme.mutedText,
+                      fontSize: 12,
                     ),
-                    const SizedBox(width: 16),
-                    const Expanded(
-                      child: Column(
-                        crossAxisAlignment:
-                            CrossAxisAlignment.start,
-                        children: [
-                          Text(
-                            'DOJO WALK',
-                            style: TextStyle(
-                              color: Colors.white70,
-                              fontSize: 12,
-                              fontWeight:
-                                  FontWeight.w600,
-                            ),
-                          ),
-                          SizedBox(height: 5),
-                          Text(
-                            'Your Profile',
-                            style: TextStyle(
-                              color: Colors.white,
-                              fontSize: 24,
-                              fontWeight:
-                                  FontWeight.w800,
-                            ),
-                          ),
-                        ],
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-
-              const SizedBox(height: 28),
-
-              const Text(
-                'Account',
-                style: TextStyle(
-                  color: DojoWalkTheme.text,
-                  fontSize: 19,
-                  fontWeight: FontWeight.w800,
-                ),
-              ),
-
-              const SizedBox(height: 12),
-
-              _ProfileTile(
-                icon: Icons.phone_rounded,
-                title: 'Mobile Number',
-                subtitle: phoneNumber,
-                trailing:
-                    Icons.chevron_right_rounded,
-                onTap: () {
-                  Navigator.push(
-                    context,
-                    MaterialPageRoute(
-                      builder: (_) =>
-                          const ChangeMobileScreen(),
-                    ),
-                  );
-                },
-              ),
-
-              const SizedBox(height: 10),
-
-              _ProfileTile(
-                icon: Icons.person_outline_rounded,
-                title: 'Account',
-                subtitle: 'DOJO WALK Customer',
-              ),
-
-              const SizedBox(height: 28),
-
-              const Text(
-                'Your DOJO',
-                style: TextStyle(
-                  color: DojoWalkTheme.text,
-                  fontSize: 19,
-                  fontWeight: FontWeight.w800,
-                ),
-              ),
-
-              const SizedBox(height: 12),
-
-              _ProfileTile(
-                icon: Icons.pets_rounded,
-                title: 'My Pets',
-                subtitle: 'Manage your dogs',
-              ),
-
-              const SizedBox(height: 10),
-
-              _ProfileTile(
-                icon: Icons.location_on_outlined,
-                title: 'Saved Addresses',
-                subtitle: 'Manage pickup locations',
-              ),
-
-              const SizedBox(height: 10),
-
-              _ProfileTile(
-                icon: Icons.receipt_long_outlined,
-                title: 'My Bookings',
-                subtitle: 'View your walk history',
-              ),
-
-              const SizedBox(height: 28),
-
-              const Text(
-                'Support',
-                style: TextStyle(
-                  color: DojoWalkTheme.text,
-                  fontSize: 19,
-                  fontWeight: FontWeight.w800,
-                ),
-              ),
-
-              const SizedBox(height: 12),
-
-              _ProfileTile(
-                icon: Icons.help_outline_rounded,
-                title: 'Help & Support',
-                subtitle: 'We are here to help',
-              ),
-
-              const SizedBox(height: 10),
-
-              _ProfileTile(
-                icon: Icons.lock_outline_rounded,
-                title: 'Privacy Policy',
-                subtitle: 'Your privacy matters',
-              ),
-
-              const SizedBox(height: 10),
-
-              _ProfileTile(
-                icon: Icons.description_outlined,
-                title: 'Terms & Conditions',
-                subtitle: 'DOJO WALK terms',
-              ),
-
-              const SizedBox(height: 28),
-
-              SizedBox(
-                width: double.infinity,
-                child: OutlinedButton.icon(
-                  onPressed: () => _logout(context),
-                  icon: const Icon(
-                    Icons.logout_rounded,
-                    color: Colors.red,
                   ),
-                  label: const Text(
-                    'Logout',
-                    style: TextStyle(
-                      color: Colors.red,
+
+                  const SizedBox(height: 3),
+
+                  Text(
+                    value,
+                    style: const TextStyle(
+                      color: DojoWalkTheme.text,
+                      fontSize: 15,
                       fontWeight: FontWeight.w700,
                     ),
                   ),
-                  style: OutlinedButton.styleFrom(
-                    minimumSize:
-                        const Size(double.infinity, 54),
-                    side: const BorderSide(
-                      color: Color(0xFFFFD4D4),
-                    ),
-                    shape: RoundedRectangleBorder(
-                      borderRadius:
-                          BorderRadius.circular(16),
-                    ),
-                  ),
-                ),
+                ],
               ),
+            ),
 
-              const SizedBox(height: 24),
-
-              const Center(
-                child: Column(
-                  children: [
-                    Text(
-                      'DOJO WALK',
-                      style: TextStyle(
-                        color: DojoWalkTheme.text,
-                        fontSize: 14,
-                        fontWeight: FontWeight.w800,
-                        letterSpacing: 1,
-                      ),
-                    ),
-                    SizedBox(height: 5),
-                    Text(
-                      'Happy walks. Happy dogs.',
-                      style: TextStyle(
-                        color:
-                            DojoWalkTheme.mutedText,
-                        fontSize: 12,
-                      ),
-                    ),
-                    SizedBox(height: 5),
-                    Text(
-                      'Version 1.0.0',
-                      style: TextStyle(
-                        color:
-                            DojoWalkTheme.mutedText,
-                        fontSize: 11,
-                      ),
-                    ),
-                  ],
-                ),
+            if (onTap != null)
+              const Icon(
+                Icons.arrow_forward_ios_rounded,
+                size: 15,
+                color:
+                    DojoWalkTheme.mutedText,
               ),
-            ],
-          ),
+          ],
         ),
       ),
     );
   }
 }
 
-class _ProfileTile extends StatelessWidget {
-  const _ProfileTile({
+class _MenuCard extends StatelessWidget {
+  const _MenuCard({
     required this.icon,
     required this.title,
     required this.subtitle,
-    this.trailing,
-    this.onTap,
+    required this.onTap,
   });
 
   final IconData icon;
   final String title;
   final String subtitle;
-  final IconData? trailing;
-  final VoidCallback? onTap;
+  final VoidCallback onTap;
 
   @override
   Widget build(BuildContext context) {
@@ -343,27 +483,30 @@ class _ProfileTile extends StatelessWidget {
       borderRadius: BorderRadius.circular(18),
       child: InkWell(
         onTap: onTap,
-        borderRadius: BorderRadius.circular(18),
+        borderRadius:
+            BorderRadius.circular(18),
         child: Padding(
           padding: const EdgeInsets.all(16),
           child: Row(
             children: [
               Container(
-                width: 46,
-                height: 46,
+                width: 48,
+                height: 48,
                 decoration: BoxDecoration(
                   color: DojoWalkTheme.primary
-                      .withValues(alpha: 0.09),
+                      .withValues(alpha: 0.10),
                   borderRadius:
                       BorderRadius.circular(14),
                 ),
                 child: Icon(
                   icon,
-                  color: DojoWalkTheme.primary,
-                  size: 24,
+                  color:
+                      DojoWalkTheme.primary,
                 ),
               ),
+
               const SizedBox(width: 14),
+
               Expanded(
                 child: Column(
                   crossAxisAlignment:
@@ -372,28 +515,34 @@ class _ProfileTile extends StatelessWidget {
                     Text(
                       title,
                       style: const TextStyle(
-                        color: DojoWalkTheme.text,
+                        color:
+                            DojoWalkTheme.text,
                         fontSize: 15,
-                        fontWeight: FontWeight.w700,
+                        fontWeight:
+                            FontWeight.w800,
                       ),
                     ),
-                    const SizedBox(height: 4),
+
+                    const SizedBox(height: 3),
+
                     Text(
                       subtitle,
                       style: const TextStyle(
-                        color:
-                            DojoWalkTheme.mutedText,
+                        color: DojoWalkTheme
+                            .mutedText,
                         fontSize: 12,
                       ),
                     ),
                   ],
                 ),
               ),
-              if (trailing != null)
-                Icon(
-                  trailing,
-                  color: DojoWalkTheme.mutedText,
-                ),
+
+              const Icon(
+                Icons.arrow_forward_ios_rounded,
+                size: 16,
+                color:
+                    DojoWalkTheme.mutedText,
+              ),
             ],
           ),
         ),
