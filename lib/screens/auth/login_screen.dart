@@ -1,6 +1,9 @@
+import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 
 import '../../app/theme.dart';
+import '../../services/auth_service.dart';
+import 'otp_verification_screen.dart';
 
 class LoginScreen extends StatefulWidget {
   const LoginScreen({super.key});
@@ -13,6 +16,8 @@ class _LoginScreenState extends State<LoginScreen> {
   final _formKey = GlobalKey<FormState>();
   final _phoneController = TextEditingController();
 
+  final AuthService _authService = AuthService();
+
   bool _isLoading = false;
 
   @override
@@ -21,32 +26,142 @@ class _LoginScreenState extends State<LoginScreen> {
     super.dispose();
   }
 
+  String _getPhoneNumber() {
+    final digits = _phoneController.text.replaceAll(
+      RegExp(r'[^0-9]'),
+      '',
+    );
+
+    return '+91$digits';
+  }
+
   Future<void> _sendOtp() async {
-    if (!_formKey.currentState!.validate()) return;
+    if (!_formKey.currentState!.validate()) {
+      return;
+    }
 
     setState(() {
       _isLoading = true;
     });
 
-    // Firebase Phone OTP will be connected next.
+    final phoneNumber = _getPhoneNumber();
 
-    await Future.delayed(
-      const Duration(milliseconds: 800),
-    );
+    try {
+      await _authService.sendOtp(
+        phoneNumber: phoneNumber,
 
-    if (!mounted) return;
+        onCodeSent: (verificationId) {
+          if (!mounted) return;
 
-    setState(() {
-      _isLoading = false;
-    });
+          setState(() {
+            _isLoading = false;
+          });
 
-    ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(
-        content: Text(
-          'OTP system will be connected with Firebase next.',
+          Navigator.push(
+            context,
+            MaterialPageRoute(
+              builder: (_) => OtpVerificationScreen(
+                phoneNumber: phoneNumber,
+                verificationId: verificationId,
+              ),
+            ),
+          );
+        },
+
+        onError: (FirebaseAuthException error) {
+          if (!mounted) return;
+
+          setState(() {
+            _isLoading = false;
+          });
+
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text(
+                _firebaseErrorMessage(error),
+              ),
+            ),
+          );
+        },
+
+        onAutoVerified: (PhoneAuthCredential credential) async {
+          try {
+            await FirebaseAuth.instance.signInWithCredential(
+              credential,
+            );
+
+            if (!mounted) return;
+
+            setState(() {
+              _isLoading = false;
+            });
+
+            ScaffoldMessenger.of(context).showSnackBar(
+              const SnackBar(
+                content: Text(
+                  'Mobile number verified successfully.',
+                ),
+              ),
+            );
+
+            // Home screen will be connected next.
+          } catch (error) {
+            if (!mounted) return;
+
+            setState(() {
+              _isLoading = false;
+            });
+
+            ScaffoldMessenger.of(context).showSnackBar(
+              const SnackBar(
+                content: Text(
+                  'Verification failed. Please try again.',
+                ),
+              ),
+            );
+          }
+        },
+      );
+    } catch (error) {
+      if (!mounted) return;
+
+      setState(() {
+        _isLoading = false;
+      });
+
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text(
+            'Unable to send OTP. Please try again.',
+          ),
         ),
-      ),
-    );
+      );
+    }
+  }
+
+  String _firebaseErrorMessage(
+    FirebaseAuthException error,
+  ) {
+    switch (error.code) {
+      case 'invalid-phone-number':
+        return 'Please enter a valid mobile number.';
+
+      case 'too-many-requests':
+        return 'Too many attempts. Please try again later.';
+
+      case 'quota-exceeded':
+        return 'OTP limit reached. Please try again later.';
+
+      case 'operation-not-allowed':
+        return 'Phone login is not enabled in Firebase.';
+
+      case 'network-request-failed':
+        return 'No internet connection. Please try again.';
+
+      default:
+        return error.message ??
+            'Unable to send OTP. Please try again.';
+    }
   }
 
   @override
@@ -66,7 +181,6 @@ class _LoginScreenState extends State<LoginScreen> {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                // Logo
                 Container(
                   width: 58,
                   height: 58,
