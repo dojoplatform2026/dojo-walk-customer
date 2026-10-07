@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 
 import '../../app/theme.dart';
+import 'register_screen.dart';
 
 class LoginScreen extends StatefulWidget {
   const LoginScreen({super.key});
@@ -32,7 +33,7 @@ class _LoginScreenState extends State<LoginScreen> {
       _isLoading = true;
     });
 
-    // Firebase login will be connected next.
+    // Firebase Authentication will be connected later.
 
     await Future.delayed(const Duration(milliseconds: 800));
 
@@ -44,17 +45,30 @@ class _LoginScreenState extends State<LoginScreen> {
 
     ScaffoldMessenger.of(context).showSnackBar(
       const SnackBar(
-        content: Text('Firebase login will be connected next.'),
+        content: Text(
+          'Login system will be connected with Firebase next.',
+        ),
       ),
     );
   }
 
   void _openRegister() {
-    // Register screen will be connected next.
+    Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (_) => const RegisterScreen(),
+      ),
+    );
   }
 
   void _forgotPassword() {
-    // Forgot password screen will be connected next.
+    ScaffoldMessenger.of(context).showSnackBar(
+      const SnackBar(
+        content: Text(
+          'Forgot password screen will be added next.',
+        ),
+      ),
+    );
   }
 
   @override
