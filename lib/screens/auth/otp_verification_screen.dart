@@ -1,9 +1,11 @@
+import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 
 import '../../app/theme.dart';
 import '../../services/auth_service.dart';
 import '../home/home_screen.dart';
+import '../profile/name_setup_screen.dart';
 
 class OtpVerificationScreen extends StatefulWidget {
   const OtpVerificationScreen({
@@ -22,12 +24,11 @@ class OtpVerificationScreen extends StatefulWidget {
 
 class _OtpVerificationScreenState
     extends State<OtpVerificationScreen> {
-  final _formKey = GlobalKey<FormState>();
-  final _otpController = TextEditingController();
-
   final AuthService _authService = AuthService();
+  final TextEditingController _otpController =
+      TextEditingController();
 
-  bool _isLoading = false;
+  bool _isVerifying = false;
 
   @override
   void dispose() {
@@ -36,22 +37,81 @@ class _OtpVerificationScreenState
   }
 
   Future<void> _verifyOtp() async {
-    if (!_formKey.currentState!.validate()) {
+    final otp = _otpController.text.trim();
+
+    if (otp.length != 6) {
+      _showMessage('Please enter the 6-digit OTP.');
       return;
     }
 
     setState(() {
-      _isLoading = true;
+      _isVerifying = true;
     });
 
     try {
       await _authService.verifyOtp(
         verificationId: widget.verificationId,
-        otp: _otpController.text.trim(),
+        otp: otp,
       );
 
       if (!mounted) return;
 
+      await _handleUserProfile();
+    } on FirebaseAuthException catch (e) {
+      if (!mounted) return;
+
+      String message =
+          'Invalid OTP. Please try again.';
+
+      if (e.code == 'invalid-verification-code') {
+        message = 'The OTP is incorrect.';
+      } else if (e.code == 'session-expired') {
+        message =
+            'This OTP has expired. Please request a new one.';
+      } else if (e.code == 'network-request-failed') {
+        message =
+            'No internet connection. Please try again.';
+      }
+
+      _showMessage(message);
+    } catch (e) {
+      if (!mounted) return;
+
+      _showMessage(
+        'Something went wrong. Please try again.',
+      );
+    } finally {
+      if (mounted) {
+        setState(() {
+          _isVerifying = false;
+        });
+      }
+    }
+  }
+
+  Future<void> _handleUserProfile() async {
+    final user = FirebaseAuth.instance.currentUser;
+
+    if (user == null) {
+      _showMessage('Please login again.');
+      return;
+    }
+
+    final userDoc = await FirebaseFirestore.instance
+        .collection('users')
+        .doc(user.uid)
+        .get();
+
+    if (!mounted) return;
+
+    final data = userDoc.data();
+
+    final name = data?['name'];
+
+    final hasName = name is String &&
+        name.trim().isNotEmpty;
+
+    if (hasName) {
       Navigator.pushAndRemoveUntil(
         context,
         MaterialPageRoute(
@@ -59,68 +119,32 @@ class _OtpVerificationScreenState
         ),
         (route) => false,
       );
-    } on FirebaseAuthException catch (error) {
-      if (!mounted) return;
-
-      setState(() {
-        _isLoading = false;
-      });
-
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text(
-            _firebaseErrorMessage(error),
-          ),
+    } else {
+      final result = await Navigator.push(
+        context,
+        MaterialPageRoute(
+          builder: (_) => const NameSetupScreen(),
         ),
       );
-    } catch (error) {
+
       if (!mounted) return;
 
-      setState(() {
-        _isLoading = false;
-      });
-
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text(
-            'Verification failed. Please try again.',
+      if (result != null) {
+        Navigator.pushAndRemoveUntil(
+          context,
+          MaterialPageRoute(
+            builder: (_) => const HomeScreen(),
           ),
-        ),
-      );
+          (route) => false,
+        );
+      }
     }
   }
 
-  String _firebaseErrorMessage(
-    FirebaseAuthException error,
-  ) {
-    switch (error.code) {
-      case 'invalid-verification-code':
-        return 'Incorrect OTP. Please check and try again.';
-
-      case 'session-expired':
-        return 'OTP expired. Please request a new OTP.';
-
-      case 'invalid-credential':
-        return 'Invalid OTP. Please request a new OTP.';
-
-      case 'too-many-requests':
-        return 'Too many attempts. Please try again later.';
-
-      case 'network-request-failed':
-        return 'No internet connection. Please try again.';
-
-      default:
-        return error.message ??
-            'OTP verification failed. Please try again.';
-    }
-  }
-
-  void _resendOtp() {
+  void _showMessage(String message) {
     ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(
-        content: Text(
-          'Please go back and request a new OTP.',
-        ),
+      SnackBar(
+        content: Text(message),
       ),
     );
   }
@@ -128,178 +152,93 @@ class _OtpVerificationScreenState
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: Colors.white,
+      backgroundColor: DojoWalkTheme.background,
       appBar: AppBar(
-        backgroundColor: Colors.white,
-        title: const Text('Verify Mobile'),
+        title: const Text('Verify OTP'),
+        backgroundColor: Colors.transparent,
       ),
       body: SafeArea(
-        child: SingleChildScrollView(
+        child: Padding(
           padding: const EdgeInsets.fromLTRB(
             24,
-            30,
+            20,
             24,
-            30,
+            24,
           ),
-          child: Form(
-            key: _formKey,
-            child: Column(
-              crossAxisAlignment:
-                  CrossAxisAlignment.start,
-              children: [
-                Center(
-                  child: Container(
-                    width: 82,
-                    height: 82,
-                    decoration: BoxDecoration(
-                      color: DojoWalkTheme.primary
-                          .withValues(alpha: 0.10),
-                      shape: BoxShape.circle,
-                    ),
-                    child: const Icon(
-                      Icons.sms_outlined,
-                      color: DojoWalkTheme.primary,
-                      size: 38,
-                    ),
-                  ),
+          child: Column(
+            crossAxisAlignment:
+                CrossAxisAlignment.start,
+            children: [
+              const SizedBox(height: 20),
+
+              const Text(
+                'Enter verification code',
+                style: TextStyle(
+                  color: DojoWalkTheme.text,
+                  fontSize: 28,
+                  fontWeight: FontWeight.w800,
                 ),
+              ),
 
-                const SizedBox(height: 32),
+              const SizedBox(height: 10),
 
-                const Center(
-                  child: Text(
-                    'Verify your number',
-                    textAlign: TextAlign.center,
-                    style: TextStyle(
-                      color: DojoWalkTheme.text,
-                      fontSize: 28,
-                      fontWeight: FontWeight.w800,
-                    ),
-                  ),
+              Text(
+                'We sent a 6-digit OTP to ${widget.phoneNumber}.',
+                style: const TextStyle(
+                  color: DojoWalkTheme.mutedText,
+                  fontSize: 14,
                 ),
+              ),
 
-                const SizedBox(height: 12),
+              const SizedBox(height: 32),
 
-                Text(
-                  'We sent a 6-digit verification code to\n${widget.phoneNumber}',
-                  textAlign: TextAlign.center,
-                  style: const TextStyle(
-                    color: DojoWalkTheme.mutedText,
-                    fontSize: 15,
-                    height: 1.5,
-                  ),
+              TextField(
+                controller: _otpController,
+                keyboardType: TextInputType.number,
+                textAlign: TextAlign.center,
+                textInputAction:
+                    TextInputAction.done,
+                maxLength: 6,
+                style: const TextStyle(
+                  fontSize: 24,
+                  fontWeight: FontWeight.w800,
+                  letterSpacing: 8,
                 ),
-
-                const SizedBox(height: 36),
-
-                const Text(
-                  'Enter OTP',
-                  style: TextStyle(
-                    color: DojoWalkTheme.text,
-                    fontSize: 14,
-                    fontWeight: FontWeight.w700,
-                  ),
+                onSubmitted: (_) {
+                  if (!_isVerifying) {
+                    _verifyOtp();
+                  }
+                },
+                decoration: const InputDecoration(
+                  hintText: '------',
+                  counterText: '',
                 ),
+              ),
 
-                const SizedBox(height: 9),
+              const Spacer(),
 
-                TextFormField(
-                  controller: _otpController,
-                  keyboardType: TextInputType.number,
-                  textInputAction: TextInputAction.done,
-                  maxLength: 6,
-                  textAlign: TextAlign.center,
-                  style: const TextStyle(
-                    fontSize: 24,
-                    fontWeight: FontWeight.w800,
-                    letterSpacing: 8,
-                  ),
-                  decoration: const InputDecoration(
-                    hintText: '••••••',
-                    counterText: '',
-                  ),
-                  validator: (value) {
-                    final otp = value?.trim() ?? '';
-
-                    if (otp.isEmpty) {
-                      return 'Please enter the OTP';
-                    }
-
-                    if (otp.length != 6) {
-                      return 'OTP must be 6 digits';
-                    }
-
-                    if (!RegExp(r'^[0-9]{6}$')
-                        .hasMatch(otp)) {
-                      return 'Please enter a valid OTP';
-                    }
-
-                    return null;
-                  },
-                  onFieldSubmitted: (_) =>
-                      _verifyOtp(),
-                ),
-
-                const SizedBox(height: 28),
-
-                SizedBox(
-                  width: double.infinity,
-                  height: 56,
-                  child: ElevatedButton(
-                    onPressed:
-                        _isLoading ? null : _verifyOtp,
-                    child: _isLoading
-                        ? const SizedBox(
-                            width: 23,
-                            height: 23,
-                            child:
-                                CircularProgressIndicator(
-                              strokeWidth: 2.5,
-                              color: Colors.white,
-                            ),
-                          )
-                        : const Text(
-                            'Verify & Continue',
+              SizedBox(
+                width: double.infinity,
+                child: ElevatedButton(
+                  onPressed: _isVerifying
+                      ? null
+                      : _verifyOtp,
+                  child: _isVerifying
+                      ? const SizedBox(
+                          width: 22,
+                          height: 22,
+                          child:
+                              CircularProgressIndicator(
+                            strokeWidth: 2.5,
+                            color: Colors.white,
                           ),
-                  ),
+                        )
+                      : const Text(
+                          'Verify & Continue',
+                        ),
                 ),
-
-                const SizedBox(height: 22),
-
-                Center(
-                  child: TextButton(
-                    onPressed: _isLoading
-                        ? null
-                        : _resendOtp,
-                    child: const Text(
-                      'Resend OTP',
-                      style: TextStyle(
-                        color: DojoWalkTheme.primary,
-                        fontWeight: FontWeight.w800,
-                      ),
-                    ),
-                  ),
-                ),
-
-                const SizedBox(height: 8),
-
-                Center(
-                  child: TextButton(
-                    onPressed: _isLoading
-                        ? null
-                        : () => Navigator.pop(context),
-                    child: const Text(
-                      'Change mobile number',
-                      style: TextStyle(
-                        color:
-                            DojoWalkTheme.mutedText,
-                        fontWeight: FontWeight.w600,
-                      ),
-                    ),
-                  ),
-                ),
-              ],
-            ),
+              ),
+            ],
           ),
         ),
       ),
