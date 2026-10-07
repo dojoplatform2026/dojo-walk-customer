@@ -305,7 +305,3 @@ class _AddPetScreenState extends State<AddPetScreen> {
     );
   }
 }
-
-Ab Add Pet → Firebase Firestore save ho jayega.
-
-Next mein "Select Pet" screen ko real Firebase pets + Add New Pet button se connect karenge.
