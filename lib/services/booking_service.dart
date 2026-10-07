@@ -27,7 +27,8 @@ class BookingService {
     required String city,
     required String pincode,
   }) async {
-    final bookingRef = _firestore.collection('bookings').doc();
+    final bookingRef =
+        _firestore.collection('bookings').doc();
 
     final status = walkType == 'immediate'
         ? 'finding_walker'
@@ -42,7 +43,8 @@ class BookingService {
 
       'walkType': walkType,
 
-      'scheduledAt': Timestamp.fromDate(walkDateTime),
+      'scheduledAt':
+          Timestamp.fromDate(walkDateTime),
 
       'pickupAddressId': addressId,
 
@@ -58,86 +60,131 @@ class BookingService {
       'walkerId': null,
       'walkerName': null,
 
-      'createdAt': FieldValue.serverTimestamp(),
-      'updatedAt': FieldValue.serverTimestamp(),
+      'cancelRequest': null,
+
+      'createdAt':
+          FieldValue.serverTimestamp(),
+
+      'updatedAt':
+          FieldValue.serverTimestamp(),
     });
 
     return bookingRef.id;
   }
 
-  /// Cancels a booking belonging to the currently logged-in customer.
+  /// Sends a cancellation request for a booking.
   ///
-  /// Cancellation is allowed only before the walk has started.
-  Future<void> cancelBooking({
+  /// The booking itself is NOT cancelled here.
+  /// Walker/admin must approve the request before
+  /// the booking status becomes "cancelled".
+  Future<void> requestCancellation({
     required String bookingId,
+    String? reason,
   }) async {
     final uid = _uid;
 
     final bookingRef =
         _firestore.collection('bookings').doc(bookingId);
 
-    final bookingSnapshot = await bookingRef.get();
+    final bookingSnapshot =
+        await bookingRef.get();
 
     if (!bookingSnapshot.exists) {
-      throw StateError('Booking not found.');
-    }
-
-    final data = bookingSnapshot.data();
-
-    if (data == null) {
-      throw StateError('Booking data is unavailable.');
-    }
-
-    // Security check:
-    // Customer can cancel only their own booking.
-    final customerId = data['customerId'] as String?;
-
-    if (customerId != uid) {
       throw StateError(
-        'You are not allowed to cancel this booking.',
+        'Booking not found.',
       );
     }
 
-    final currentStatus =
-        data['status'] as String? ?? 'unknown';
+    final data =
+        bookingSnapshot.data();
 
-    // Cancellation is allowed only before the walk starts.
-    const cancellableStatuses = {
+    if (data == null) {
+      throw StateError(
+        'Booking data is unavailable.',
+      );
+    }
+
+    // Customer ownership check.
+    final customerId =
+        data['customerId'] as String?;
+
+    if (customerId != uid) {
+      throw StateError(
+        'You are not allowed to request cancellation for this booking.',
+      );
+    }
+
+    final status =
+        data['status'] as String? ?? '';
+
+    // Cancellation request is not allowed
+    // once the walk has started or finished.
+    const allowedStatuses = {
       'pending',
       'finding_walker',
       'walker_assigned',
       'walker_arriving',
     };
 
-    if (!cancellableStatuses.contains(currentStatus)) {
-      if (currentStatus == 'walk_started') {
+    if (!allowedStatuses.contains(status)) {
+      if (status == 'walk_started') {
         throw StateError(
-          'This booking cannot be cancelled because the walk has already started.',
+          'Cancellation is not available because the walk has already started.',
         );
       }
 
-      if (currentStatus == 'completed') {
+      if (status == 'completed') {
         throw StateError(
-          'This booking is already completed.',
+          'This walk has already been completed.',
         );
       }
 
-      if (currentStatus == 'cancelled') {
+      if (status == 'cancelled') {
         throw StateError(
           'This booking is already cancelled.',
         );
       }
 
       throw StateError(
-        'This booking cannot be cancelled now.',
+        'Cancellation request cannot be sent at this stage.',
       );
     }
 
+    // Check if a request already exists.
+    final existingRequest =
+        data['cancelRequest'];
+
+    if (existingRequest is Map) {
+      final existingStatus =
+          existingRequest['status']
+              as String?;
+
+      if (existingStatus == 'pending') {
+        throw StateError(
+          'A cancellation request is already pending.',
+        );
+      }
+
+      if (existingStatus == 'approved') {
+        throw StateError(
+          'This cancellation request has already been approved.',
+        );
+      }
+    }
+
     await bookingRef.update({
-      'status': 'cancelled',
-      'cancelledBy': 'customer',
-      'cancelledAt': FieldValue.serverTimestamp(),
-      'updatedAt': FieldValue.serverTimestamp(),
+      'cancelRequest': {
+        'status': 'pending',
+        'requestedBy': 'customer',
+        'customerId': uid,
+        'reason': reason?.trim().isEmpty == true
+            ? null
+            : reason?.trim(),
+        'requestedAt':
+            FieldValue.serverTimestamp(),
+      },
+      'updatedAt':
+          FieldValue.serverTimestamp(),
     });
   }
 }
