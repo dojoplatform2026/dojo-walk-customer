@@ -1,30 +1,37 @@
 import 'package:flutter/material.dart';
 
 import '../../app/theme.dart';
+import '../../models/pet.dart';
+import '../../services/pet_service.dart';
+import '../pets/add_pet_screen.dart';
 
 class SelectPetScreen extends StatefulWidget {
-  const SelectPetScreen({
-    super.key,
-  });
+  const SelectPetScreen({super.key});
 
   @override
-  State<SelectPetScreen> createState() =>
-      _SelectPetScreenState();
+  State<SelectPetScreen> createState() => _SelectPetScreenState();
 }
 
 class _SelectPetScreenState extends State<SelectPetScreen> {
-  int? _selectedPet;
+  final PetService _petService = PetService();
 
-  final List<_PetOption> _pets = const [
-    _PetOption(
-      name: 'My Dog',
-      breed: 'Add your pet details',
-      icon: Icons.pets_rounded,
-    ),
-  ];
+  String? _selectedPetId;
+
+  Future<void> _addPet() async {
+    final result = await Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (_) => const AddPetScreen(),
+      ),
+    );
+
+    if (result == true && mounted) {
+      setState(() {});
+    }
+  }
 
   void _continue() {
-    if (_selectedPet == null) {
+    if (_selectedPetId == null) {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
           content: Text('Please select a pet.'),
@@ -68,9 +75,7 @@ class _SelectPetScreenState extends State<SelectPetScreen> {
                   fontWeight: FontWeight.w800,
                 ),
               ),
-
               const SizedBox(height: 10),
-
               const Text(
                 'Select the dog you want to book a walk for.',
                 style: TextStyle(
@@ -78,45 +83,70 @@ class _SelectPetScreenState extends State<SelectPetScreen> {
                   fontSize: 15,
                 ),
               ),
+              const SizedBox(height: 26),
+              Expanded(
+                child: StreamBuilder<List<Pet>>(
+                  stream: _petService.watchPets(),
+                  builder: (context, snapshot) {
+                    if (snapshot.connectionState ==
+                        ConnectionState.waiting) {
+                      return const Center(
+                        child: CircularProgressIndicator(
+                          color: DojoWalkTheme.primary,
+                        ),
+                      );
+                    }
 
-              const SizedBox(height: 28),
+                    if (snapshot.hasError) {
+                      return Center(
+                        child: Text(
+                          'Unable to load pets.',
+                          style: TextStyle(
+                            color: Colors.grey.shade600,
+                          ),
+                        ),
+                      );
+                    }
 
-              ...List.generate(
-                _pets.length,
-                (index) {
-                  final pet = _pets[index];
-                  final selected = _selectedPet == index;
+                    final pets = snapshot.data ?? [];
 
-                  return Padding(
-                    padding: const EdgeInsets.only(
-                      bottom: 12,
-                    ),
-                    child: _PetCard(
-                      pet: pet,
-                      selected: selected,
-                      onTap: () {
-                        setState(() {
-                          _selectedPet = index;
-                        });
+                    if (pets.isEmpty) {
+                      return _EmptyPets(
+                        onAddPet: _addPet,
+                      );
+                    }
+
+                    return ListView.separated(
+                      padding: EdgeInsets.zero,
+                      itemCount: pets.length,
+                      separatorBuilder: (_, __) =>
+                          const SizedBox(height: 12),
+                      itemBuilder: (context, index) {
+                        final pet = pets[index];
+
+                        return _PetCard(
+                          pet: pet,
+                          selected:
+                              _selectedPetId == pet.id,
+                          onTap: () {
+                            setState(() {
+                              _selectedPetId = pet.id;
+                            });
+                          },
+                        );
                       },
-                    ),
-                  );
-                },
+                    );
+                  },
+                ),
               ),
-
-              const SizedBox(height: 4),
-
+              const SizedBox(height: 14),
               SizedBox(
                 width: double.infinity,
                 height: 54,
                 child: OutlinedButton.icon(
-                  onPressed: () {},
-                  icon: const Icon(
-                    Icons.add_rounded,
-                  ),
-                  label: const Text(
-                    'Add New Pet',
-                  ),
+                  onPressed: _addPet,
+                  icon: const Icon(Icons.add_rounded),
+                  label: const Text('Add New Pet'),
                   style: OutlinedButton.styleFrom(
                     foregroundColor:
                         DojoWalkTheme.primary,
@@ -130,17 +160,16 @@ class _SelectPetScreenState extends State<SelectPetScreen> {
                   ),
                 ),
               ),
-
-              const Spacer(),
-
+              const SizedBox(height: 12),
               SizedBox(
                 width: double.infinity,
                 height: 56,
                 child: ElevatedButton(
-                  onPressed: _continue,
-                  child: const Text(
-                    'Continue',
-                  ),
+                  onPressed:
+                      _selectedPetId == null
+                          ? null
+                          : _continue,
+                  child: const Text('Continue'),
                 ),
               ),
             ],
@@ -158,7 +187,7 @@ class _PetCard extends StatelessWidget {
     required this.onTap,
   });
 
-  final _PetOption pet;
+  final Pet pet;
   final bool selected;
   final VoidCallback onTap;
 
@@ -188,10 +217,12 @@ class _PetCard extends StatelessWidget {
                 width: 58,
                 height: 58,
                 decoration: BoxDecoration(
-                  color: DojoWalkTheme.primary.withValues(
+                  color:
+                      DojoWalkTheme.primary.withValues(
                     alpha: 0.10,
                   ),
-                  borderRadius: BorderRadius.circular(17),
+                  borderRadius:
+                      BorderRadius.circular(17),
                 ),
                 child: const Icon(
                   Icons.pets_rounded,
@@ -199,9 +230,7 @@ class _PetCard extends StatelessWidget {
                   size: 30,
                 ),
               ),
-
               const SizedBox(width: 15),
-
               Expanded(
                 child: Column(
                   crossAxisAlignment:
@@ -217,7 +246,7 @@ class _PetCard extends StatelessWidget {
                     ),
                     const SizedBox(height: 5),
                     Text(
-                      pet.breed,
+                      '${pet.breed} • ${pet.age} years • ${pet.gender}',
                       style: const TextStyle(
                         color: DojoWalkTheme.mutedText,
                         fontSize: 13,
@@ -226,7 +255,6 @@ class _PetCard extends StatelessWidget {
                   ],
                 ),
               ),
-
               Icon(
                 selected
                     ? Icons.radio_button_checked_rounded
@@ -243,14 +271,64 @@ class _PetCard extends StatelessWidget {
   }
 }
 
-class _PetOption {
-  const _PetOption({
-    required this.name,
-    required this.breed,
-    required this.icon,
+class _EmptyPets extends StatelessWidget {
+  const _EmptyPets({
+    required this.onAddPet,
   });
 
-  final String name;
-  final String breed;
-  final IconData icon;
+  final VoidCallback onAddPet;
+
+  @override
+  Widget build(BuildContext context) {
+    return Center(
+      child: Column(
+        mainAxisAlignment:
+            MainAxisAlignment.center,
+        children: [
+          Container(
+            width: 82,
+            height: 82,
+            decoration: BoxDecoration(
+              color:
+                  DojoWalkTheme.primary.withValues(
+                alpha: 0.10,
+              ),
+              shape: BoxShape.circle,
+            ),
+            child: const Icon(
+              Icons.pets_rounded,
+              color: DojoWalkTheme.primary,
+              size: 40,
+            ),
+          ),
+          const SizedBox(height: 18),
+          const Text(
+            'No pets added yet',
+            style: TextStyle(
+              color: DojoWalkTheme.text,
+              fontSize: 18,
+              fontWeight: FontWeight.w800,
+            ),
+          ),
+          const SizedBox(height: 7),
+          const Text(
+            'Add your dog before booking a walk.',
+            textAlign: TextAlign.center,
+            style: TextStyle(
+              color: DojoWalkTheme.mutedText,
+              fontSize: 14,
+            ),
+          ),
+          const SizedBox(height: 20),
+          ElevatedButton(
+            onPressed: onAddPet,
+            style: ElevatedButton.styleFrom(
+              minimumSize: const Size(150, 48),
+            ),
+            child: const Text('Add Pet'),
+          ),
+        ],
+      ),
+    );
+  }
 }
