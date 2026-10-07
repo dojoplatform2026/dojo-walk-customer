@@ -1,4 +1,4 @@
-name: Build DOJO WALK Android
+name: DOJO WALK - Generate Android
 
 on:
   workflow_dispatch:
@@ -6,42 +6,48 @@ on:
     branches:
       - main
 
+permissions:
+  contents: write
+
 jobs:
-  build:
+  generate-android:
+    name: Generate Android Project
     runs-on: ubuntu-latest
 
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
 
-      - name: Set up Java
-        uses: actions/setup-java@v4
-        with:
-          distribution: temurin
-          java-version: '17'
-
-      - name: Set up Flutter
+      - name: Setup Flutter
         uses: subosito/flutter-action@v2
         with:
-          flutter-version: '3.35.7'
+          flutter-version: "3.35.7"
           channel: stable
           cache: true
 
-      - name: Generate Android project
+      - name: Generate Android folder
         run: flutter create --platforms=android .
 
       - name: Restore Firebase config
         run: |
           test -f android/app/google-services.json
 
-      - name: Get Flutter packages
+      - name: Get dependencies
         run: flutter pub get
 
-      - name: Build APK
-        run: flutter build apk --debug
+      - name: Analyze Flutter project
+        run: flutter analyze
 
-      - name: Upload APK
-        uses: actions/upload-artifact@v4
-        with:
-          name: dojo-walk-customer-debug-apk
-          path: build/app/outputs/flutter-apk/app-debug.apk
+      - name: Commit Android folder
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+
+          git add android
+
+          if git diff --cached --quiet; then
+            echo "No Android changes to commit."
+          else
+            git commit -m "Generate Android project"
+            git push
+          fi
