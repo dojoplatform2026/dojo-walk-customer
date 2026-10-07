@@ -2,6 +2,7 @@ import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 
 import '../../app/theme.dart';
+import '../booking/my_bookings_screen.dart';
 import '../booking/walk_service_screen.dart';
 
 class HomeScreen extends StatelessWidget {
@@ -23,12 +24,14 @@ class HomeScreen extends StatelessWidget {
                 children: [
                   Expanded(
                     child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
+                      crossAxisAlignment:
+                          CrossAxisAlignment.start,
                       children: [
                         const Text(
                           'Good morning 👋',
                           style: TextStyle(
-                            color: DojoWalkTheme.mutedText,
+                            color:
+                                DojoWalkTheme.mutedText,
                             fontSize: 14,
                             fontWeight: FontWeight.w500,
                           ),
@@ -50,7 +53,8 @@ class HomeScreen extends StatelessWidget {
                     height: 48,
                     decoration: BoxDecoration(
                       color: Colors.white,
-                      borderRadius: BorderRadius.circular(16),
+                      borderRadius:
+                          BorderRadius.circular(16),
                     ),
                     child: const Icon(
                       Icons.notifications_none_rounded,
@@ -67,10 +71,12 @@ class HomeScreen extends StatelessWidget {
                 padding: const EdgeInsets.all(22),
                 decoration: BoxDecoration(
                   color: DojoWalkTheme.primary,
-                  borderRadius: BorderRadius.circular(24),
+                  borderRadius:
+                      BorderRadius.circular(24),
                 ),
                 child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
+                  crossAxisAlignment:
+                      CrossAxisAlignment.start,
                   children: [
                     const Text(
                       'Give your dog\nan extra happy walk.',
@@ -108,10 +114,12 @@ class HomeScreen extends StatelessWidget {
                           foregroundColor:
                               DojoWalkTheme.primary,
                           minimumSize: Size.zero,
-                          padding: const EdgeInsets.symmetric(
+                          padding:
+                              const EdgeInsets.symmetric(
                             horizontal: 22,
                           ),
-                          shape: RoundedRectangleBorder(
+                          shape:
+                              RoundedRectangleBorder(
                             borderRadius:
                                 BorderRadius.circular(15),
                           ),
@@ -167,15 +175,25 @@ class HomeScreen extends StatelessWidget {
                 children: [
                   Expanded(
                     child: _ActionCard(
-                      icon: Icons.receipt_long_outlined,
+                      icon:
+                          Icons.receipt_long_outlined,
                       title: 'My Bookings',
-                      onTap: () {},
+                      onTap: () {
+                        Navigator.push(
+                          context,
+                          MaterialPageRoute(
+                            builder: (_) =>
+                                const MyBookingsScreen(),
+                          ),
+                        );
+                      },
                     ),
                   ),
                   const SizedBox(width: 12),
                   Expanded(
                     child: _ActionCard(
-                      icon: Icons.person_outline_rounded,
+                      icon:
+                          Icons.person_outline_rounded,
                       title: 'Profile',
                       onTap: () {},
                     ),
@@ -190,7 +208,8 @@ class HomeScreen extends StatelessWidget {
                 padding: const EdgeInsets.all(18),
                 decoration: BoxDecoration(
                   color: Colors.white,
-                  borderRadius: BorderRadius.circular(20),
+                  borderRadius:
+                      BorderRadius.circular(20),
                 ),
                 child: Row(
                   children: [
@@ -198,15 +217,16 @@ class HomeScreen extends StatelessWidget {
                       width: 48,
                       height: 48,
                       decoration: BoxDecoration(
-                        color: DojoWalkTheme.primary.withValues(
-                          alpha: 0.10,
-                        ),
+                        color:
+                            DojoWalkTheme.primary
+                                .withValues(alpha: 0.10),
                         borderRadius:
                             BorderRadius.circular(14),
                       ),
                       child: const Icon(
                         Icons.verified_user_outlined,
-                        color: DojoWalkTheme.primary,
+                        color:
+                            DojoWalkTheme.primary,
                       ),
                     ),
                     const SizedBox(width: 14),
@@ -218,9 +238,11 @@ class HomeScreen extends StatelessWidget {
                           Text(
                             'Trusted dog walking',
                             style: TextStyle(
-                              color: DojoWalkTheme.text,
+                              color:
+                                  DojoWalkTheme.text,
                               fontSize: 15,
-                              fontWeight: FontWeight.w800,
+                              fontWeight:
+                                  FontWeight.w800,
                             ),
                           ),
                           SizedBox(height: 4),
@@ -245,7 +267,8 @@ class HomeScreen extends StatelessWidget {
                   child: Text(
                     user!.phoneNumber!,
                     style: const TextStyle(
-                      color: DojoWalkTheme.mutedText,
+                      color:
+                          DojoWalkTheme.mutedText,
                       fontSize: 12,
                     ),
                   ),
@@ -281,7 +304,8 @@ class _ActionCard extends StatelessWidget {
         child: Padding(
           padding: const EdgeInsets.all(17),
           child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
+            crossAxisAlignment:
+                CrossAxisAlignment.start,
             children: [
               Icon(
                 icon,
