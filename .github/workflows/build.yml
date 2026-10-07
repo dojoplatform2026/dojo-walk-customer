@@ -1,10 +1,10 @@
-name: Generate Android
+name: Build Android
 
 on:
   workflow_dispatch:
 
 permissions:
-  contents: write
+  contents: read
 
 jobs:
   android:
@@ -20,14 +20,8 @@ jobs:
           flutter-version: "3.35.7"
           channel: stable
 
-      - name: Generate Android
-        run: flutter create --platforms=android .
-
       - name: Check Firebase
         run: test -f android/app/google-services.json
-
-      - name: Remove default test
-        run: rm -f test/widget_test.dart
 
       - name: Install dependencies
         run: flutter pub get
@@ -35,10 +29,11 @@ jobs:
       - name: Analyze
         run: flutter analyze
 
-      - name: Save Android folder
-        run: |
-          git config user.name "github-actions[bot]"
-          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          git add android
-          git commit -m "Add Android project" || true
-          git push
+      - name: Build Android APK
+        run: flutter build apk --debug
+
+      - name: Upload APK
+        uses: actions/upload-artifact@v4
+        with:
+          name: dojo-walk-customer-debug-apk
+          path: build/app/outputs/flutter-apk/app-debug.apk
