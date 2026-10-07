@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 import '../../app/theme.dart';
 import '../booking/my_bookings_screen.dart';
 import '../booking/walk_service_screen.dart';
+import '../profile/profile_screen.dart';
 
 class HomeScreen extends StatelessWidget {
   const HomeScreen({super.key});
@@ -195,7 +196,15 @@ class HomeScreen extends StatelessWidget {
                       icon:
                           Icons.person_outline_rounded,
                       title: 'Profile',
-                      onTap: () {},
+                      onTap: () {
+                        Navigator.push(
+                          context,
+                          MaterialPageRoute(
+                            builder: (_) =>
+                                const ProfileScreen(),
+                          ),
+                        );
+                      },
                     ),
                   ),
                 ],
