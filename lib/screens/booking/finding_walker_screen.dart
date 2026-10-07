@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 
 import '../../app/theme.dart';
 import '../../services/booking_watch_service.dart';
+import 'walker_arriving_screen.dart';
 
 class FindingWalkerScreen extends StatefulWidget {
   const FindingWalkerScreen({
@@ -29,6 +30,7 @@ class _FindingWalkerScreenState
     return PopScope(
       canPop: false,
       child: Scaffold(
+        backgroundColor: DojoWalkTheme.background,
         body: SafeArea(
           child: StreamBuilder<
               DocumentSnapshot<Map<String, dynamic>>>(
@@ -44,6 +46,12 @@ class _FindingWalkerScreenState
                 );
               }
 
+              if (snapshot.connectionState ==
+                      ConnectionState.waiting &&
+                  !snapshot.hasData) {
+                return const _LoadingView();
+              }
+
               if (!snapshot.hasData) {
                 return const _LoadingView();
               }
@@ -55,21 +63,78 @@ class _FindingWalkerScreenState
               }
 
               final data = booking.data() ?? {};
+
               final status =
                   data['status'] as String? ?? '';
 
+              final walkerName =
+                  data['walkerName'] as String?;
+
+              // Walker has been assigned.
               if (status == 'walker_assigned') {
                 return _AssignedView(
                   bookingId: widget.bookingId,
-                  walkerName:
-                      data['walkerName'] as String?,
+                  walkerName: walkerName,
+                  onViewWalk: () {
+                    _openWalkerArriving(
+                      context,
+                      status: status,
+                    );
+                  },
                 );
               }
 
+              // Walker is on the way.
+              if (status == 'walker_arriving') {
+                return _AssignedView(
+                  bookingId: widget.bookingId,
+                  walkerName: walkerName,
+                  title: 'Walker is on the way',
+                  message: walkerName?.isNotEmpty == true
+                      ? '$walkerName is coming to the pickup location.'
+                      : 'Your walker is coming to the pickup location.',
+                  buttonText: 'Track Walker',
+                  onViewWalk: () {
+                    _openWalkerArriving(
+                      context,
+                      status: status,
+                    );
+                  },
+                );
+              }
+
+              // Walk has started.
+              if (status == 'walk_started') {
+                return _AssignedView(
+                  bookingId: widget.bookingId,
+                  walkerName: walkerName,
+                  title: 'Walk in progress',
+                  message:
+                      'Your dog is now out for a walk.',
+                  buttonText: 'View Walk',
+                  onViewWalk: () {
+                    _openWalkerArriving(
+                      context,
+                      status: status,
+                    );
+                  },
+                );
+              }
+
+              // Walk completed.
+              if (status == 'completed') {
+                return _CompletedView(
+                  bookingId: widget.bookingId,
+                  walkerName: walkerName,
+                );
+              }
+
+              // Cancelled booking.
               if (status == 'cancelled') {
                 return const _CancelledView();
               }
 
+              // Pending / finding walker.
               return _FindingView(
                 bookingId: widget.bookingId,
                 immediate: widget.immediate,
@@ -77,6 +142,20 @@ class _FindingWalkerScreenState
               );
             },
           ),
+        ),
+      ),
+    );
+  }
+
+  void _openWalkerArriving(
+    BuildContext context, {
+    required String status,
+  }) {
+    Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (_) => WalkerArrivingScreen(
+          bookingId: widget.bookingId,
         ),
       ),
     );
@@ -96,15 +175,22 @@ class _FindingView extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final isPending = status == 'pending';
+
     return Padding(
-      padding: const EdgeInsets.all(24),
+      padding: const EdgeInsets.fromLTRB(
+        24,
+        24,
+        24,
+        18,
+      ),
       child: Column(
         children: [
           const Spacer(),
 
           Container(
-            width: 120,
-            height: 120,
+            width: 124,
+            height: 124,
             decoration: BoxDecoration(
               color: DojoWalkTheme.primary
                   .withValues(alpha: 0.10),
@@ -112,8 +198,8 @@ class _FindingView extends StatelessWidget {
             ),
             child: Center(
               child: Container(
-                width: 78,
-                height: 78,
+                width: 80,
+                height: 80,
                 decoration: const BoxDecoration(
                   color: DojoWalkTheme.primary,
                   shape: BoxShape.circle,
@@ -121,7 +207,7 @@ class _FindingView extends StatelessWidget {
                 child: const Icon(
                   Icons.pets_rounded,
                   color: Colors.white,
-                  size: 40,
+                  size: 42,
                 ),
               ),
             ),
@@ -135,6 +221,7 @@ class _FindingView extends StatelessWidget {
                 : 'Walk booked',
             textAlign: TextAlign.center,
             style: const TextStyle(
+              color: DojoWalkTheme.text,
               fontSize: 28,
               fontWeight: FontWeight.w800,
             ),
@@ -158,22 +245,38 @@ class _FindingView extends StatelessWidget {
 
           if (immediate)
             const SizedBox(
-              width: 34,
-              height: 34,
+              width: 36,
+              height: 36,
               child: CircularProgressIndicator(
                 strokeWidth: 3,
                 color: DojoWalkTheme.primary,
               ),
+            )
+          else
+            Container(
+              width: 58,
+              height: 58,
+              decoration: BoxDecoration(
+                color: DojoWalkTheme.primary
+                    .withValues(alpha: 0.10),
+                shape: BoxShape.circle,
+              ),
+              child: const Icon(
+                Icons.event_available_rounded,
+                color: DojoWalkTheme.primary,
+                size: 30,
+              ),
             ),
 
-          const SizedBox(height: 24),
+          const SizedBox(height: 28),
 
           Container(
             width: double.infinity,
             padding: const EdgeInsets.all(16),
             decoration: BoxDecoration(
               color: Colors.white,
-              borderRadius: BorderRadius.circular(16),
+              borderRadius:
+                  BorderRadius.circular(16),
               border: Border.all(
                 color: const Color(0xFFE8E8E8),
               ),
@@ -188,7 +291,11 @@ class _FindingView extends StatelessWidget {
                 Expanded(
                   child: Text(
                     'Booking ID: $bookingId',
+                    maxLines: 1,
+                    overflow:
+                        TextOverflow.ellipsis,
                     style: const TextStyle(
+                      color: DojoWalkTheme.text,
                       fontSize: 13,
                       fontWeight: FontWeight.w600,
                     ),
@@ -201,17 +308,16 @@ class _FindingView extends StatelessWidget {
           const Spacer(),
 
           Text(
-            status == 'pending'
-                ? 'We will notify you when a walker is assigned.'
+            isPending
+                ? 'We will assign a walker closer to your scheduled walk.'
                 : 'Please keep the app open while we find your walker.',
             textAlign: TextAlign.center,
             style: const TextStyle(
               color: DojoWalkTheme.mutedText,
               fontSize: 12,
+              height: 1.4,
             ),
           ),
-
-          const SizedBox(height: 12),
         ],
       ),
     );
@@ -220,6 +326,150 @@ class _FindingView extends StatelessWidget {
 
 class _AssignedView extends StatelessWidget {
   const _AssignedView({
+    required this.bookingId,
+    required this.walkerName,
+    required this.onViewWalk,
+    this.title = 'Walker assigned!',
+    this.message,
+    this.buttonText = 'View Walk',
+  });
+
+  final String bookingId;
+  final String? walkerName;
+  final VoidCallback onViewWalk;
+  final String title;
+  final String? message;
+  final String buttonText;
+
+  @override
+  Widget build(BuildContext context) {
+    final defaultMessage =
+        walkerName?.isNotEmpty == true
+            ? '$walkerName is assigned to your walk.'
+            : 'A walker has been assigned to your walk.';
+
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(
+        24,
+        24,
+        24,
+        20,
+      ),
+      child: Column(
+        children: [
+          const Spacer(),
+
+          Container(
+            width: 104,
+            height: 104,
+            decoration: BoxDecoration(
+              color: DojoWalkTheme.primary
+                  .withValues(alpha: 0.10),
+              shape: BoxShape.circle,
+            ),
+            child: const Icon(
+              Icons.person_rounded,
+              color: DojoWalkTheme.primary,
+              size: 54,
+            ),
+          ),
+
+          const SizedBox(height: 28),
+
+          Text(
+            title,
+            textAlign: TextAlign.center,
+            style: const TextStyle(
+              color: DojoWalkTheme.text,
+              fontSize: 28,
+              fontWeight: FontWeight.w800,
+            ),
+          ),
+
+          const SizedBox(height: 10),
+
+          Text(
+            message ?? defaultMessage,
+            textAlign: TextAlign.center,
+            style: const TextStyle(
+              color: DojoWalkTheme.mutedText,
+              fontSize: 15,
+              height: 1.5,
+            ),
+          ),
+
+          const SizedBox(height: 24),
+
+          Container(
+            width: double.infinity,
+            padding: const EdgeInsets.all(18),
+            decoration: BoxDecoration(
+              color: Colors.white,
+              borderRadius:
+                  BorderRadius.circular(18),
+              border: Border.all(
+                color: const Color(0xFFE8E8E8),
+              ),
+            ),
+            child: Row(
+              children: [
+                Container(
+                  width: 42,
+                  height: 42,
+                  decoration: BoxDecoration(
+                    color: DojoWalkTheme.primary
+                        .withValues(alpha: 0.10),
+                    borderRadius:
+                        BorderRadius.circular(12),
+                  ),
+                  child: const Icon(
+                    Icons.check_circle_rounded,
+                    color: DojoWalkTheme.primary,
+                  ),
+                ),
+                const SizedBox(width: 12),
+                const Expanded(
+                  child: Text(
+                    'Your walker will arrive at the pickup address.',
+                    style: TextStyle(
+                      color: DojoWalkTheme.text,
+                      fontSize: 14,
+                      fontWeight: FontWeight.w600,
+                      height: 1.4,
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ),
+
+          const SizedBox(height: 12),
+
+          Text(
+            'Booking ID: $bookingId',
+            style: const TextStyle(
+              color: DojoWalkTheme.mutedText,
+              fontSize: 11,
+            ),
+          ),
+
+          const Spacer(),
+
+          SizedBox(
+            width: double.infinity,
+            child: ElevatedButton(
+              onPressed: onViewWalk,
+              child: Text(buttonText),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _CompletedView extends StatelessWidget {
+  const _CompletedView({
     required this.bookingId,
     required this.walkerName,
   });
@@ -236,26 +486,27 @@ class _AssignedView extends StatelessWidget {
           const Spacer(),
 
           Container(
-            width: 100,
-            height: 100,
+            width: 110,
+            height: 110,
             decoration: BoxDecoration(
               color: DojoWalkTheme.primary
                   .withValues(alpha: 0.10),
               shape: BoxShape.circle,
             ),
             child: const Icon(
-              Icons.person_rounded,
+              Icons.celebration_rounded,
               color: DojoWalkTheme.primary,
-              size: 52,
+              size: 54,
             ),
           ),
 
           const SizedBox(height: 28),
 
           const Text(
-            'Walker assigned!',
+            'Walk completed!',
             textAlign: TextAlign.center,
             style: TextStyle(
+              color: DojoWalkTheme.text,
               fontSize: 28,
               fontWeight: FontWeight.w800,
             ),
@@ -265,44 +516,23 @@ class _AssignedView extends StatelessWidget {
 
           Text(
             walkerName?.isNotEmpty == true
-                ? '$walkerName is assigned to your walk.'
-                : 'A walker has been assigned to your walk.',
+                ? 'Thanks for choosing DOJO WALK. ${walkerName!} completed the walk.'
+                : 'Thanks for choosing DOJO WALK. Your walk has been completed.',
             textAlign: TextAlign.center,
             style: const TextStyle(
               color: DojoWalkTheme.mutedText,
               fontSize: 15,
+              height: 1.5,
             ),
           ),
 
           const SizedBox(height: 24),
 
-          Container(
-            width: double.infinity,
-            padding: const EdgeInsets.all(18),
-            decoration: BoxDecoration(
-              color: Colors.white,
-              borderRadius: BorderRadius.circular(18),
-              border: Border.all(
-                color: const Color(0xFFE8E8E8),
-              ),
-            ),
-            child: const Row(
-              children: [
-                Icon(
-                  Icons.check_circle_rounded,
-                  color: DojoWalkTheme.primary,
-                ),
-                SizedBox(width: 12),
-                Expanded(
-                  child: Text(
-                    'Your walker will arrive at the pickup address.',
-                    style: TextStyle(
-                      fontSize: 14,
-                      fontWeight: FontWeight.w600,
-                    ),
-                  ),
-                ),
-              ],
+          Text(
+            'Booking ID: $bookingId',
+            style: const TextStyle(
+              color: DojoWalkTheme.mutedText,
+              fontSize: 12,
             ),
           ),
 
@@ -312,11 +542,13 @@ class _AssignedView extends StatelessWidget {
             width: double.infinity,
             child: ElevatedButton(
               onPressed: () {
-                // Next step:
-                // Walker Arriving screen.
+                Navigator.popUntil(
+                  context,
+                  (route) => route.isFirst,
+                );
               },
               child: const Text(
-                'View Walk',
+                'Back to Home',
               ),
             ),
           ),
@@ -363,6 +595,7 @@ class _ErrorView extends StatelessWidget {
             const Text(
               'Unable to load booking',
               style: TextStyle(
+                color: DojoWalkTheme.text,
                 fontSize: 20,
                 fontWeight: FontWeight.w800,
               ),
@@ -387,7 +620,8 @@ class _ErrorView extends StatelessWidget {
   }
 }
 
-class _BookingNotFoundView extends StatelessWidget {
+class _BookingNotFoundView
+    extends StatelessWidget {
   const _BookingNotFoundView();
 
   @override
@@ -398,6 +632,7 @@ class _BookingNotFoundView extends StatelessWidget {
         child: Text(
           'Booking not found.',
           style: TextStyle(
+            color: DojoWalkTheme.text,
             fontSize: 20,
             fontWeight: FontWeight.w700,
           ),
@@ -427,6 +662,7 @@ class _CancelledView extends StatelessWidget {
             const Text(
               'Booking cancelled',
               style: TextStyle(
+                color: DojoWalkTheme.text,
                 fontSize: 24,
                 fontWeight: FontWeight.w800,
               ),
