@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 
 import '../../app/theme.dart';
 import '../../models/pet.dart';
+import 'pickup_address_screen.dart';
 
 class WalkDateTimeScreen extends StatefulWidget {
   const WalkDateTimeScreen({
@@ -87,21 +88,16 @@ class _WalkDateTimeScreenState
             _selectedTime!.minute,
           );
 
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: Text(
-          widget.immediate
-              ? '${widget.pet.name} walk requested now.'
-              : '${widget.pet.name} walk scheduled.',
+    Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (_) => PickupAddressScreen(
+          petName: widget.pet.name,
+          immediate: widget.immediate,
+          walkDateTime: dateTime,
         ),
       ),
     );
-
-    // Next step:
-    // Pickup Address screen yahan open hoga.
-    debugPrint('Pet: ${widget.pet.id}');
-    debugPrint('Immediate: ${widget.immediate}');
-    debugPrint('Walk time: $dateTime');
   }
 
   String _formatDate(DateTime date) {
@@ -329,7 +325,8 @@ class _SelectionCard extends StatelessWidget {
                   color: DojoWalkTheme.primary.withValues(
                     alpha: 0.10,
                   ),
-                  borderRadius: BorderRadius.circular(16),
+                  borderRadius:
+                      BorderRadius.circular(16),
                 ),
                 child: Icon(
                   icon,
@@ -346,7 +343,8 @@ class _SelectionCard extends StatelessWidget {
                     Text(
                       title,
                       style: const TextStyle(
-                        color: DojoWalkTheme.mutedText,
+                        color:
+                            DojoWalkTheme.mutedText,
                         fontSize: 12,
                         fontWeight: FontWeight.w600,
                       ),
