@@ -64,4 +64,80 @@ class BookingService {
 
     return bookingRef.id;
   }
+
+  /// Cancels a booking belonging to the currently logged-in customer.
+  ///
+  /// Cancellation is allowed only before the walk has started.
+  Future<void> cancelBooking({
+    required String bookingId,
+  }) async {
+    final uid = _uid;
+
+    final bookingRef =
+        _firestore.collection('bookings').doc(bookingId);
+
+    final bookingSnapshot = await bookingRef.get();
+
+    if (!bookingSnapshot.exists) {
+      throw StateError('Booking not found.');
+    }
+
+    final data = bookingSnapshot.data();
+
+    if (data == null) {
+      throw StateError('Booking data is unavailable.');
+    }
+
+    // Security check:
+    // Customer can cancel only their own booking.
+    final customerId = data['customerId'] as String?;
+
+    if (customerId != uid) {
+      throw StateError(
+        'You are not allowed to cancel this booking.',
+      );
+    }
+
+    final currentStatus =
+        data['status'] as String? ?? 'unknown';
+
+    // Cancellation is allowed only before the walk starts.
+    const cancellableStatuses = {
+      'pending',
+      'finding_walker',
+      'walker_assigned',
+      'walker_arriving',
+    };
+
+    if (!cancellableStatuses.contains(currentStatus)) {
+      if (currentStatus == 'walk_started') {
+        throw StateError(
+          'This booking cannot be cancelled because the walk has already started.',
+        );
+      }
+
+      if (currentStatus == 'completed') {
+        throw StateError(
+          'This booking is already completed.',
+        );
+      }
+
+      if (currentStatus == 'cancelled') {
+        throw StateError(
+          'This booking is already cancelled.',
+        );
+      }
+
+      throw StateError(
+        'This booking cannot be cancelled now.',
+      );
+    }
+
+    await bookingRef.update({
+      'status': 'cancelled',
+      'cancelledBy': 'customer',
+      'cancelledAt': FieldValue.serverTimestamp(),
+      'updatedAt': FieldValue.serverTimestamp(),
+    });
+  }
 }
