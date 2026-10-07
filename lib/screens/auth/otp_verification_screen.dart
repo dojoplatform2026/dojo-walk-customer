@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 
 import '../../app/theme.dart';
 import '../../services/auth_service.dart';
+import '../home/home_screen.dart';
 
 class OtpVerificationScreen extends StatefulWidget {
   const OtpVerificationScreen({
@@ -51,19 +52,13 @@ class _OtpVerificationScreenState
 
       if (!mounted) return;
 
-      setState(() {
-        _isLoading = false;
-      });
-
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text(
-            'Mobile number verified successfully.',
-          ),
+      Navigator.pushAndRemoveUntil(
+        context,
+        MaterialPageRoute(
+          builder: (_) => const HomeScreen(),
         ),
+        (route) => false,
       );
-
-      // Home screen will be connected next.
     } on FirebaseAuthException catch (error) {
       if (!mounted) return;
 
@@ -149,16 +144,16 @@ class _OtpVerificationScreenState
           child: Form(
             key: _formKey,
             child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
+              crossAxisAlignment:
+                  CrossAxisAlignment.start,
               children: [
                 Center(
                   child: Container(
                     width: 82,
                     height: 82,
                     decoration: BoxDecoration(
-                      color: DojoWalkTheme.primary.withValues(
-                        alpha: 0.10,
-                      ),
+                      color: DojoWalkTheme.primary
+                          .withValues(alpha: 0.10),
                       shape: BoxShape.circle,
                     ),
                     child: const Icon(
@@ -234,13 +229,15 @@ class _OtpVerificationScreenState
                       return 'OTP must be 6 digits';
                     }
 
-                    if (!RegExp(r'^[0-9]{6}$').hasMatch(otp)) {
+                    if (!RegExp(r'^[0-9]{6}$')
+                        .hasMatch(otp)) {
                       return 'Please enter a valid OTP';
                     }
 
                     return null;
                   },
-                  onFieldSubmitted: (_) => _verifyOtp(),
+                  onFieldSubmitted: (_) =>
+                      _verifyOtp(),
                 ),
 
                 const SizedBox(height: 28),
@@ -249,9 +246,8 @@ class _OtpVerificationScreenState
                   width: double.infinity,
                   height: 56,
                   child: ElevatedButton(
-                    onPressed: _isLoading
-                        ? null
-                        : _verifyOtp,
+                    onPressed:
+                        _isLoading ? null : _verifyOtp,
                     child: _isLoading
                         ? const SizedBox(
                             width: 23,
@@ -295,7 +291,8 @@ class _OtpVerificationScreenState
                     child: const Text(
                       'Change mobile number',
                       style: TextStyle(
-                        color: DojoWalkTheme.mutedText,
+                        color:
+                            DojoWalkTheme.mutedText,
                         fontWeight: FontWeight.w600,
                       ),
                     ),
