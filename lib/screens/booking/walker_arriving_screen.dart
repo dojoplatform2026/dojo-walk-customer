@@ -25,8 +25,7 @@ class WalkerArrivingScreen extends StatelessWidget {
         automaticallyImplyLeading: false,
       ),
       body: SafeArea(
-        child: StreamBuilder<
-            DocumentSnapshot<Map<String, dynamic>>>(
+        child: StreamBuilder<DocumentSnapshot<Map<String, dynamic>>>(
           stream: service.watchBooking(bookingId),
           builder: (context, snapshot) {
             if (snapshot.hasError) {
@@ -35,8 +34,7 @@ class WalkerArrivingScreen extends StatelessWidget {
               );
             }
 
-            if (snapshot.connectionState ==
-                    ConnectionState.waiting &&
+            if (snapshot.connectionState == ConnectionState.waiting &&
                 !snapshot.hasData) {
               return const _LoadingView();
             }
@@ -53,30 +51,24 @@ class WalkerArrivingScreen extends StatelessWidget {
 
             final data = booking.data() ?? {};
 
-            final status =
-                data['status'] as String? ?? '';
+            final status = data['status'] as String? ?? '';
 
             final walkerName =
-                data['walkerName'] as String? ??
-                    'Your walker';
+                data['walkerName'] as String? ?? 'Your walker';
 
             final petName =
-                data['petName'] as String? ??
-                    'your dog';
+                data['petName'] as String? ?? 'your dog';
 
             final addressData =
-                data['pickupAddress']
-                    as Map<String, dynamic>?;
+                data['pickupAddress'] as Map<String, dynamic>?;
 
             final address =
-                addressData?['address'] as String? ??
-                    '';
+                addressData?['address'] as String? ?? '';
 
             final city =
                 addressData?['city'] as String? ?? '';
 
-            final cancelRequest =
-                data['cancelRequest'];
+            final cancelRequest = data['cancelRequest'];
 
             final cancellationPending =
                 cancelRequest is Map &&
@@ -87,8 +79,7 @@ class WalkerArrivingScreen extends StatelessWidget {
                 walkerName: walkerName,
                 petName: petName,
                 bookingId: bookingId,
-                cancellationPending:
-                    cancellationPending,
+                cancellationPending: cancellationPending,
               );
             }
 
@@ -99,8 +90,7 @@ class WalkerArrivingScreen extends StatelessWidget {
                 bookingId: bookingId,
                 address: address,
                 city: city,
-                cancellationPending:
-                    cancellationPending,
+                cancellationPending: cancellationPending,
               );
             }
 
@@ -152,8 +142,7 @@ class _WalkerAssignedView extends StatelessWidget {
     return _BaseWalkLayout(
       icon: Icons.person_rounded,
       title: 'Walker assigned!',
-      message:
-          '$walkerName is assigned to walk $petName.',
+      message: '$walkerName is assigned to walk $petName.',
       child: Column(
         children: [
           _InfoCard(
@@ -213,6 +202,15 @@ class _WalkerArrivingView extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final pickupLocation = [
+      address,
+      city,
+    ]
+        .where(
+          (value) => value.trim().isNotEmpty,
+        )
+        .join(', ');
+
     return SingleChildScrollView(
       padding: const EdgeInsets.fromLTRB(
         20,
@@ -221,17 +219,14 @@ class _WalkerArrivingView extends StatelessWidget {
         30,
       ),
       child: Column(
-        crossAxisAlignment:
-            CrossAxisAlignment.start,
+        crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Container(
             width: double.infinity,
             height: 190,
             decoration: BoxDecoration(
-              color: DojoWalkTheme.primary
-                  .withValues(alpha: 0.08),
-              borderRadius:
-                  BorderRadius.circular(24),
+              color: DojoWalkTheme.primary.withValues(alpha: 0.08),
+              borderRadius: BorderRadius.circular(24),
             ),
             child: const Center(
               child: Icon(
@@ -275,14 +270,7 @@ class _WalkerArrivingView extends StatelessWidget {
           _InfoCard(
             icon: Icons.location_on_rounded,
             title: 'Pickup location',
-            value: [
-              address,
-              city,
-            ]
-                .where(
-                  (value) => value.trim().isNotEmpty,
-                )
-                .join(', '),
+            value: pickupLocation,
           ),
           const SizedBox(height: 16),
           const _StatusBanner(
@@ -329,18 +317,15 @@ class _WalkStartedView extends StatelessWidget {
     return _BaseWalkLayout(
       icon: Icons.directions_walk_rounded,
       title: 'Walk started!',
-      message:
-          '$walkerName has started the walk with $petName.',
+      message: '$walkerName has started the walk with $petName.',
       child: Column(
         children: [
           Container(
             width: double.infinity,
             padding: const EdgeInsets.all(18),
             decoration: BoxDecoration(
-              color: DojoWalkTheme.primary
-                  .withValues(alpha: 0.08),
-              borderRadius:
-                  BorderRadius.circular(18),
+              color: DojoWalkTheme.primary.withValues(alpha: 0.08),
+              borderRadius: BorderRadius.circular(18),
             ),
             child: const Row(
               children: [
@@ -392,15 +377,13 @@ class _WalkCompletedView extends StatelessWidget {
       child: SingleChildScrollView(
         padding: const EdgeInsets.all(24),
         child: Column(
-          mainAxisAlignment:
-              MainAxisAlignment.center,
+          mainAxisAlignment: MainAxisAlignment.center,
           children: [
             Container(
               width: 112,
               height: 112,
               decoration: BoxDecoration(
-                color: DojoWalkTheme.primary
-                    .withValues(alpha: 0.10),
+                color: DojoWalkTheme.primary.withValues(alpha: 0.10),
                 shape: BoxShape.circle,
               ),
               child: const Icon(
@@ -446,8 +429,7 @@ class _WalkCompletedView extends StatelessWidget {
                   Navigator.pushReplacement(
                     context,
                     MaterialPageRoute(
-                      builder: (_) =>
-                          RateWalkerScreen(
+                      builder: (_) => RateWalkerScreen(
                         bookingId: bookingId,
                         walkerName: walkerName,
                       ),
@@ -484,15 +466,13 @@ class _WaitingView extends StatelessWidget {
       child: SingleChildScrollView(
         padding: const EdgeInsets.all(24),
         child: Column(
-          mainAxisAlignment:
-              MainAxisAlignment.center,
+          mainAxisAlignment: MainAxisAlignment.center,
           children: [
             Container(
               width: 100,
               height: 100,
               decoration: BoxDecoration(
-                color: DojoWalkTheme.primary
-                    .withValues(alpha: 0.10),
+                color: DojoWalkTheme.primary.withValues(alpha: 0.10),
                 shape: BoxShape.circle,
               ),
               child: const Icon(
@@ -582,41 +562,49 @@ class _CancelRequestButton extends StatelessWidget {
               content: SingleChildScrollView(
                 child: Column(
                   mainAxisSize: MainAxisSize.min,
-                  crossAxisAlignment:
-                      CrossAxisAlignment.start,
+                  crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     const Text(
                       'Please select a reason for your cancellation request.',
                       style: TextStyle(
-                        color:
-                            DojoWalkTheme.mutedText,
+                        color: DojoWalkTheme.mutedText,
                         height: 1.4,
                       ),
                     ),
                     const SizedBox(height: 18),
                     ...reasons.map(
                       (reason) {
-                        return RadioListTile<String>(
-                          value: reason,
-                          groupValue:
-                              selectedReason,
-                          contentPadding:
-                              EdgeInsets.zero,
-                          activeColor:
-                              DojoWalkTheme.primary,
+                        final isSelected =
+                            selectedReason == reason;
+
+                        return ListTile(
+                          contentPadding: EdgeInsets.zero,
+                          leading: Icon(
+                            isSelected
+                                ? Icons.radio_button_checked_rounded
+                                : Icons.radio_button_unchecked_rounded,
+                            color: isSelected
+                                ? DojoWalkTheme.primary
+                                : DojoWalkTheme.mutedText,
+                          ),
                           title: Text(
                             reason,
-                            style:
-                                const TextStyle(
+                            style: const TextStyle(
                               fontSize: 14,
-                              fontWeight:
-                                  FontWeight.w600,
+                              fontWeight: FontWeight.w600,
                             ),
                           ),
-                          onChanged: (value) {
+                          selected: isSelected,
+                          selectedTileColor:
+                              DojoWalkTheme.primary.withValues(
+                            alpha: 0.05,
+                          ),
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(12),
+                          ),
+                          onTap: () {
                             setState(() {
-                              selectedReason =
-                                  value;
+                              selectedReason = reason;
                             });
                           },
                         );
@@ -628,28 +616,25 @@ class _CancelRequestButton extends StatelessWidget {
               actions: [
                 TextButton(
                   onPressed: () {
-                    Navigator.pop(
-                      dialogContext,
-                    );
+                    Navigator.pop(dialogContext);
                   },
                   child: const Text(
                     'Keep Booking',
                   ),
                 ),
                 ElevatedButton(
-                  onPressed:
-                      selectedReason == null
-                          ? null
-                          : () async {
-                              Navigator.pop(
-                                dialogContext,
-                              );
+                  onPressed: selectedReason == null
+                      ? null
+                      : () async {
+                          final reason = selectedReason!;
 
-                              await _sendRequest(
-                                context,
-                                selectedReason!,
-                              );
-                            },
+                          Navigator.pop(dialogContext);
+
+                          await _sendRequest(
+                            context,
+                            reason,
+                          );
+                        },
                   child: const Text(
                     'Send Request',
                   ),
@@ -696,8 +681,7 @@ class _CancelRequestButton extends StatelessWidget {
     );
 
     try {
-      await BookingService()
-          .requestCancellation(
+      await BookingService().requestCancellation(
         bookingId: bookingId,
         reason: reason,
       );
@@ -708,8 +692,7 @@ class _CancelRequestButton extends StatelessWidget {
 
       Navigator.pop(context);
 
-      ScaffoldMessenger.of(context)
-          .showSnackBar(
+      ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
           content: Text(
             'Cancellation request sent.',
@@ -723,13 +706,11 @@ class _CancelRequestButton extends StatelessWidget {
 
       Navigator.pop(context);
 
-      final message =
-          error is StateError
-              ? error.message
-              : 'Unable to send cancellation request. Please try again.';
+      final message = error is StateError
+          ? error.message
+          : 'Unable to send cancellation request. Please try again.';
 
-      ScaffoldMessenger.of(context)
-          .showSnackBar(
+      ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
           content: Text(message),
         ),
@@ -743,9 +724,7 @@ class _CancelRequestButton extends StatelessWidget {
       width: double.infinity,
       child: OutlinedButton.icon(
         onPressed: () {
-          _showCancellationDialog(
-            context,
-          );
+          _showCancellationDialog(context);
         },
         icon: const Icon(
           Icons.close_rounded,
@@ -763,8 +742,7 @@ class _CancelRequestButton extends StatelessWidget {
             52,
           ),
           shape: RoundedRectangleBorder(
-            borderRadius:
-                BorderRadius.circular(16),
+            borderRadius: BorderRadius.circular(16),
           ),
           textStyle: const TextStyle(
             fontSize: 15,
@@ -776,8 +754,7 @@ class _CancelRequestButton extends StatelessWidget {
   }
 }
 
-class _CancellationPendingBanner
-    extends StatelessWidget {
+class _CancellationPendingBanner extends StatelessWidget {
   const _CancellationPendingBanner();
 
   @override
@@ -786,17 +763,14 @@ class _CancellationPendingBanner
       width: double.infinity,
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
-        color: DojoWalkTheme.primary
-            .withValues(alpha: 0.08),
+        color: DojoWalkTheme.primary.withValues(alpha: 0.08),
         borderRadius: BorderRadius.circular(18),
         border: Border.all(
-          color: DojoWalkTheme.primary
-              .withValues(alpha: 0.18),
+          color: DojoWalkTheme.primary.withValues(alpha: 0.18),
         ),
       ),
       child: const Row(
-        crossAxisAlignment:
-            CrossAxisAlignment.start,
+        crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Icon(
             Icons.hourglass_top_rounded,
@@ -806,8 +780,7 @@ class _CancellationPendingBanner
           SizedBox(width: 12),
           Expanded(
             child: Column(
-              crossAxisAlignment:
-                  CrossAxisAlignment.start,
+              crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(
                   'Cancellation request pending',
@@ -850,13 +823,11 @@ class _StatusBanner extends StatelessWidget {
       width: double.infinity,
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
-        color: DojoWalkTheme.primary
-            .withValues(alpha: 0.07),
+        color: DojoWalkTheme.primary.withValues(alpha: 0.07),
         borderRadius: BorderRadius.circular(16),
       ),
       child: Row(
-        crossAxisAlignment:
-            CrossAxisAlignment.start,
+        crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Icon(
             icon,
@@ -910,10 +881,8 @@ class _InfoCard extends StatelessWidget {
             width: 46,
             height: 46,
             decoration: BoxDecoration(
-              color: DojoWalkTheme.primary
-                  .withValues(alpha: 0.09),
-              borderRadius:
-                  BorderRadius.circular(14),
+              color: DojoWalkTheme.primary.withValues(alpha: 0.09),
+              borderRadius: BorderRadius.circular(14),
             ),
             child: Icon(
               icon,
@@ -924,8 +893,7 @@ class _InfoCard extends StatelessWidget {
           const SizedBox(width: 13),
           Expanded(
             child: Column(
-              crossAxisAlignment:
-                  CrossAxisAlignment.start,
+              crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(
                   title,
@@ -936,12 +904,9 @@ class _InfoCard extends StatelessWidget {
                 ),
                 const SizedBox(height: 4),
                 Text(
-                  value.isEmpty
-                      ? 'Not available'
-                      : value,
+                  value.isEmpty ? 'Not available' : value,
                   maxLines: 2,
-                  overflow:
-                      TextOverflow.ellipsis,
+                  overflow: TextOverflow.ellipsis,
                   style: const TextStyle(
                     color: DojoWalkTheme.text,
                     fontSize: 15,
@@ -985,8 +950,7 @@ class _BaseWalkLayout extends StatelessWidget {
             width: 112,
             height: 112,
             decoration: BoxDecoration(
-              color: DojoWalkTheme.primary
-                  .withValues(alpha: 0.10),
+              color: DojoWalkTheme.primary.withValues(alpha: 0.10),
               shape: BoxShape.circle,
             ),
             child: Icon(
@@ -1085,8 +1049,7 @@ class _ErrorView extends StatelessWidget {
   }
 }
 
-class _BookingNotFoundView
-    extends StatelessWidget {
+class _BookingNotFoundView extends StatelessWidget {
   const _BookingNotFoundView();
 
   @override
