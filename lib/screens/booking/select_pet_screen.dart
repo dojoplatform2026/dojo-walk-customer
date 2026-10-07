@@ -4,12 +4,19 @@ import '../../app/theme.dart';
 import '../../models/pet.dart';
 import '../../services/pet_service.dart';
 import '../pets/add_pet_screen.dart';
+import 'walk_datetime_screen.dart';
 
 class SelectPetScreen extends StatefulWidget {
-  const SelectPetScreen({super.key});
+  const SelectPetScreen({
+    super.key,
+    required this.immediate,
+  });
+
+  final bool immediate;
 
   @override
-  State<SelectPetScreen> createState() => _SelectPetScreenState();
+  State<SelectPetScreen> createState() =>
+      _SelectPetScreenState();
 }
 
 class _SelectPetScreenState extends State<SelectPetScreen> {
@@ -30,7 +37,7 @@ class _SelectPetScreenState extends State<SelectPetScreen> {
     }
   }
 
-  void _continue() {
+  void _continue(List<Pet> pets) {
     if (_selectedPetId == null) {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
@@ -40,9 +47,17 @@ class _SelectPetScreenState extends State<SelectPetScreen> {
       return;
     }
 
-    ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(
-        content: Text('Pet selected.'),
+    final selectedPet = pets.firstWhere(
+      (pet) => pet.id == _selectedPetId,
+    );
+
+    Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (_) => WalkDateTimeScreen(
+          pet: selectedPet,
+          immediate: widget.immediate,
+        ),
       ),
     );
   }
@@ -161,16 +176,23 @@ class _SelectPetScreenState extends State<SelectPetScreen> {
                 ),
               ),
               const SizedBox(height: 12),
-              SizedBox(
-                width: double.infinity,
-                height: 56,
-                child: ElevatedButton(
-                  onPressed:
-                      _selectedPetId == null
+              StreamBuilder<List<Pet>>(
+                stream: _petService.watchPets(),
+                builder: (context, snapshot) {
+                  final pets = snapshot.data ?? [];
+
+                  return SizedBox(
+                    width: double.infinity,
+                    height: 56,
+                    child: ElevatedButton(
+                      onPressed: _selectedPetId == null ||
+                              pets.isEmpty
                           ? null
-                          : _continue,
-                  child: const Text('Continue'),
-                ),
+                          : () => _continue(pets),
+                      child: const Text('Continue'),
+                    ),
+                  );
+                },
               ),
             ],
           ),
@@ -217,12 +239,10 @@ class _PetCard extends StatelessWidget {
                 width: 58,
                 height: 58,
                 decoration: BoxDecoration(
-                  color:
-                      DojoWalkTheme.primary.withValues(
+                  color: DojoWalkTheme.primary.withValues(
                     alpha: 0.10,
                   ),
-                  borderRadius:
-                      BorderRadius.circular(17),
+                  borderRadius: BorderRadius.circular(17),
                 ),
                 child: const Icon(
                   Icons.pets_rounded,
@@ -289,8 +309,7 @@ class _EmptyPets extends StatelessWidget {
             width: 82,
             height: 82,
             decoration: BoxDecoration(
-              color:
-                  DojoWalkTheme.primary.withValues(
+              color: DojoWalkTheme.primary.withValues(
                 alpha: 0.10,
               ),
               shape: BoxShape.circle,
