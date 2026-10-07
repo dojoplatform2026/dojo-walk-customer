@@ -4,6 +4,7 @@ import '../../app/theme.dart';
 import '../../models/pickup_address.dart';
 import '../../services/pickup_address_service.dart';
 import '../addresses/add_address_screen.dart';
+import 'booking_summary_screen.dart';
 
 class PickupAddressScreen extends StatefulWidget {
   const PickupAddressScreen({
@@ -46,7 +47,9 @@ class _PickupAddressScreenState
     if (_selectedAddressId == null) {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
-          content: Text('Please select a pickup address.'),
+          content: Text(
+            'Please select a pickup address.',
+          ),
         ),
       );
       return;
@@ -56,18 +59,17 @@ class _PickupAddressScreenState
       (address) => address.id == _selectedAddressId,
     );
 
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: Text(
-          '${selected.label} selected for ${widget.petName}.',
+    Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (_) => BookingSummaryScreen(
+          petName: widget.petName,
+          immediate: widget.immediate,
+          walkDateTime: widget.walkDateTime,
+          address: selected,
         ),
       ),
     );
-
-    debugPrint('Address: ${selected.id}');
-    debugPrint('Pet: ${widget.petName}');
-    debugPrint('Immediate: ${widget.immediate}');
-    debugPrint('Walk time: ${widget.walkDateTime}');
   }
 
   @override
