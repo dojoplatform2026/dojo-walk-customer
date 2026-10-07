@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 
 import '../../app/theme.dart';
+import 'select_pet_screen.dart';
 
 class WalkServiceScreen extends StatefulWidget {
   const WalkServiceScreen({super.key});
@@ -15,12 +16,11 @@ class _WalkServiceScreenState
   bool _immediate = true;
 
   void _continue() {
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: Text(
-          _immediate
-              ? 'Immediate walk selected.'
-              : 'Scheduled walk selected.',
+    Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (_) => SelectPetScreen(
+          immediate: _immediate,
         ),
       ),
     );
@@ -54,9 +54,7 @@ class _WalkServiceScreenState
                   fontWeight: FontWeight.w800,
                 ),
               ),
-
               const SizedBox(height: 10),
-
               const Text(
                 'Choose a walk time that works best for you.',
                 style: TextStyle(
@@ -64,9 +62,7 @@ class _WalkServiceScreenState
                   fontSize: 15,
                 ),
               ),
-
               const SizedBox(height: 30),
-
               _WalkOption(
                 selected: _immediate,
                 icon: Icons.flash_on_rounded,
@@ -80,9 +76,7 @@ class _WalkServiceScreenState
                   });
                 },
               ),
-
               const SizedBox(height: 14),
-
               _WalkOption(
                 selected: !_immediate,
                 icon: Icons.calendar_month_rounded,
@@ -96,9 +90,7 @@ class _WalkServiceScreenState
                   });
                 },
               ),
-
               const Spacer(),
-
               SizedBox(
                 width: double.infinity,
                 height: 56,
@@ -174,9 +166,7 @@ class _WalkOption extends StatelessWidget {
                   size: 28,
                 ),
               ),
-
               const SizedBox(width: 15),
-
               Expanded(
                 child: Column(
                   crossAxisAlignment:
@@ -232,9 +222,7 @@ class _WalkOption extends StatelessWidget {
                   ],
                 ),
               ),
-
               const SizedBox(width: 8),
-
               Icon(
                 selected
                     ? Icons.radio_button_checked_rounded
