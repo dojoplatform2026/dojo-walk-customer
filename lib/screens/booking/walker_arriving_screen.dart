@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 
 import '../../app/theme.dart';
 import '../../services/booking_watch_service.dart';
+import 'rate_walker_screen.dart';
 
 class WalkerArrivingScreen extends StatelessWidget {
   const WalkerArrivingScreen({
@@ -68,6 +69,7 @@ class WalkerArrivingScreen extends StatelessWidget {
             if (status == 'completed') {
               return _WalkCompletedView(
                 walkerName: walkerName,
+                bookingId: bookingId,
               );
             }
 
@@ -105,7 +107,8 @@ class _WalkerArrivingView extends StatelessWidget {
             decoration: BoxDecoration(
               color: DojoWalkTheme.primary
                   .withValues(alpha: 0.08),
-              borderRadius: BorderRadius.circular(24),
+              borderRadius:
+                  BorderRadius.circular(24),
             ),
             child: const Center(
               child: Icon(
@@ -144,7 +147,8 @@ class _WalkerArrivingView extends StatelessWidget {
             padding: const EdgeInsets.all(18),
             decoration: BoxDecoration(
               color: Colors.white,
-              borderRadius: BorderRadius.circular(18),
+              borderRadius:
+                  BorderRadius.circular(18),
               border: Border.all(
                 color: const Color(0xFFE8E8E8),
               ),
@@ -186,7 +190,8 @@ class _WalkerArrivingView extends StatelessWidget {
                         walkerName,
                         style: const TextStyle(
                           fontSize: 17,
-                          fontWeight: FontWeight.w800,
+                          fontWeight:
+                              FontWeight.w800,
                         ),
                       ),
                     ],
@@ -204,25 +209,27 @@ class _WalkerArrivingView extends StatelessWidget {
             decoration: BoxDecoration(
               color: DojoWalkTheme.primary
                   .withValues(alpha: 0.07),
-              borderRadius: BorderRadius.circular(18),
+              borderRadius:
+                  BorderRadius.circular(18),
             ),
-            child: Row(
+            child: const Row(
               children: [
-                const Icon(
+                Icon(
                   Icons.location_on_rounded,
                   color: DojoWalkTheme.primary,
                 ),
-                const SizedBox(width: 12),
-                const Expanded(
+                SizedBox(width: 12),
+                Expanded(
                   child: Text(
                     'Pickup location confirmed',
                     style: TextStyle(
                       fontSize: 14,
-                      fontWeight: FontWeight.w700,
+                      fontWeight:
+                          FontWeight.w700,
                     ),
                   ),
                 ),
-                const Icon(
+                Icon(
                   Icons.check_circle_rounded,
                   color: DojoWalkTheme.primary,
                 ),
@@ -283,7 +290,8 @@ class _WalkStartedView extends StatelessWidget {
               textAlign: TextAlign.center,
               style: TextStyle(
                 fontSize: 28,
-                fontWeight: FontWeight.w800,
+                fontWeight:
+                    FontWeight.w800,
               ),
             ),
 
@@ -308,14 +316,16 @@ class _WalkStartedView extends StatelessWidget {
 class _WalkCompletedView extends StatelessWidget {
   const _WalkCompletedView({
     required this.walkerName,
+    required this.bookingId,
   });
 
   final String walkerName;
+  final String bookingId;
 
   @override
   Widget build(BuildContext context) {
     return Center(
-      child: Padding(
+      child: SingleChildScrollView(
         padding: const EdgeInsets.all(24),
         child: Column(
           mainAxisAlignment:
@@ -343,7 +353,8 @@ class _WalkCompletedView extends StatelessWidget {
               textAlign: TextAlign.center,
               style: TextStyle(
                 fontSize: 28,
-                fontWeight: FontWeight.w800,
+                fontWeight:
+                    FontWeight.w800,
               ),
             ),
 
@@ -356,6 +367,29 @@ class _WalkCompletedView extends StatelessWidget {
                 color: DojoWalkTheme.mutedText,
                 fontSize: 15,
                 height: 1.5,
+              ),
+            ),
+
+            const SizedBox(height: 28),
+
+            SizedBox(
+              width: double.infinity,
+              child: ElevatedButton(
+                onPressed: () {
+                  Navigator.pushReplacement(
+                    context,
+                    MaterialPageRoute(
+                      builder: (_) =>
+                          RateWalkerScreen(
+                        bookingId: bookingId,
+                        walkerName: walkerName,
+                      ),
+                    ),
+                  );
+                },
+                child: const Text(
+                  'Rate Walker',
+                ),
               ),
             ),
           ],
