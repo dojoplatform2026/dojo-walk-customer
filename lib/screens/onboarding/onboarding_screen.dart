@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 
 import '../../app/theme.dart';
+import '../auth/login_screen.dart';
 
 class OnboardingScreen extends StatefulWidget {
   const OnboardingScreen({super.key});
@@ -60,7 +61,7 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
     Navigator.pushReplacement(
       context,
       MaterialPageRoute(
-        builder: (_) => const _LoginPlaceholderScreen(),
+        builder: (_) => const LoginScreen(),
       ),
     );
   }
@@ -94,7 +95,7 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
               ),
             ),
 
-            // Pages
+            // Onboarding pages
             Expanded(
               child: PageView.builder(
                 controller: _pageController,
@@ -205,7 +206,7 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
 
             const SizedBox(height: 28),
 
-            // Continue button
+            // Continue / Get Started
             Padding(
               padding: const EdgeInsets.fromLTRB(20, 0, 20, 20),
               child: SizedBox(
@@ -238,28 +239,4 @@ class _OnboardingData {
     required this.title,
     required this.description,
   });
-}
-
-// Temporary screen.
-// Proper Login screen will replace this in the next step.
-class _LoginPlaceholderScreen extends StatelessWidget {
-  const _LoginPlaceholderScreen();
-
-  @override
-  Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: AppBar(
-        title: const Text('DOJO WALK'),
-      ),
-      body: const Center(
-        child: Text(
-          'Login screen coming next',
-          style: TextStyle(
-            fontSize: 18,
-            fontWeight: FontWeight.w700,
-          ),
-        ),
-      ),
-    );
-  }
 }
