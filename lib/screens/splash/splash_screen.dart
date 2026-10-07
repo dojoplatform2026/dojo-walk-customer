@@ -1,15 +1,18 @@
 import 'dart:async';
 
+import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 
 import '../../app/theme.dart';
+import '../home/home_screen.dart';
 import '../onboarding/onboarding_screen.dart';
 
 class SplashScreen extends StatefulWidget {
   const SplashScreen({super.key});
 
   @override
-  State<SplashScreen> createState() => _SplashScreenState();
+  State<SplashScreen> createState() =>
+      _SplashScreenState();
 }
 
 class _SplashScreenState extends State<SplashScreen> {
@@ -19,16 +22,27 @@ class _SplashScreenState extends State<SplashScreen> {
   void initState() {
     super.initState();
 
-    _timer = Timer(const Duration(seconds: 2), () {
-      if (!mounted) return;
+    _timer = Timer(
+      const Duration(seconds: 2),
+      _checkAuth,
+    );
+  }
 
-      Navigator.pushReplacement(
-        context,
-        MaterialPageRoute(
-          builder: (_) => const OnboardingScreen(),
-        ),
-      );
-    });
+  void _checkAuth() {
+    if (!mounted) return;
+
+    final user = FirebaseAuth.instance.currentUser;
+
+    final nextScreen = user != null
+        ? const HomeScreen()
+        : const OnboardingScreen();
+
+    Navigator.pushReplacement(
+      context,
+      MaterialPageRoute(
+        builder: (_) => nextScreen,
+      ),
+    );
   }
 
   @override
@@ -44,17 +58,20 @@ class _SplashScreenState extends State<SplashScreen> {
       body: SafeArea(
         child: Center(
           child: Column(
-            mainAxisAlignment: MainAxisAlignment.center,
+            mainAxisAlignment:
+                MainAxisAlignment.center,
             children: [
               Container(
                 width: 112,
                 height: 112,
                 decoration: BoxDecoration(
                   color: DojoWalkTheme.primary,
-                  borderRadius: BorderRadius.circular(32),
+                  borderRadius:
+                      BorderRadius.circular(32),
                   boxShadow: [
                     BoxShadow(
-                      color: DojoWalkTheme.primary.withValues(alpha: 0.18),
+                      color: DojoWalkTheme.primary
+                          .withValues(alpha: 0.18),
                       blurRadius: 28,
                       offset: const Offset(0, 12),
                     ),
