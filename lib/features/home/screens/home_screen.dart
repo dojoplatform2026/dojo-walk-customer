@@ -1,15 +1,9 @@
 
-import 'package:cloud_firestore/cloud_firestore.dart';
-import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 
-import '../../../app/theme.dart';
-import '../../notifications/screens/notifications_screen.dart';
-import '../../../screens/auth/login_screen.dart';
-import '../../../screens/booking/my_bookings_screen.dart';
-import '../../../screens/booking/walk_service_screen.dart';
-import '../../../screens/pets/my_pets_screen.dart';
-import '../../../screens/profile/profile_screen.dart';
+const Color dojoOrange = Color(0xFFFF7900);
+const Color dojoBackground = Color(0xFFFFFAF5);
+const Color dojoText = Color(0xFF202020);
 
 class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
@@ -19,79 +13,138 @@ class HomeScreen extends StatefulWidget {
 }
 
 class _HomeScreenState extends State<HomeScreen> {
-  int _currentIndex = 0;
+  int _selectedTab = 0;
+  String _selectedAddress = 'Select your location';
 
-  void _requireLogin(String action) {
-    if (FirebaseAuth.instance.currentUser != null) return;
+  void _showMessage(String message) {
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(content: Text(message)),
+    );
+  }
 
-    Navigator.of(context)
-        .push(
-          MaterialPageRoute<void>(
-            builder: (_) => const LoginScreen(),
+  void _openAddressSelector() {
+    showModalBottomSheet<void>(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: Colors.white,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(
+          top: Radius.circular(26),
+        ),
+      ),
+      builder: (sheetContext) {
+        final controller = TextEditingController();
+
+        return Padding(
+          padding: EdgeInsets.fromLTRB(
+            24,
+            24,
+            24,
+            24 + MediaQuery.of(sheetContext).viewInsets.bottom,
           ),
-        )
-        .then((_) {
-          if (mounted) setState(() {});
-        });
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              const Text(
+                'Where should we pick up your dog?',
+                style: TextStyle(
+                  fontSize: 21,
+                  fontWeight: FontWeight.w800,
+                  color: dojoText,
+                ),
+              ),
+              const SizedBox(height: 8),
+              const Text(
+                'Enter your area or address.',
+                style: TextStyle(color: Colors.black54),
+              ),
+              const SizedBox(height: 20),
+              TextField(
+                controller: controller,
+                textCapitalization: TextCapitalization.words,
+                decoration: InputDecoration(
+                  hintText: 'Enter address or area',
+                  prefixIcon: const Icon(
+                    Icons.location_on_outlined,
+                    color: dojoOrange,
+                  ),
+                  border: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(14),
+                  ),
+                ),
+              ),
+              const SizedBox(height: 16),
+              SizedBox(
+                width: double.infinity,
+                height: 52,
+                child: ElevatedButton(
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: dojoOrange,
+                    foregroundColor: Colors.white,
+                  ),
+                  onPressed: () {
+                    final address = controller.text.trim();
+
+                    if (address.isEmpty) return;
+
+                    setState(() => _selectedAddress = address);
+                    Navigator.pop(sheetContext);
+                  },
+                  child: const Text('Save location'),
+                ),
+              ),
+            ],
+          ),
+        );
+      },
+    );
+  }
+
+  void _selectTab(int index) {
+    setState(() => _selectedTab = index);
   }
 
   @override
   Widget build(BuildContext context) {
-    final user = FirebaseAuth.instance.currentUser;
-
-    final screens = [
-      _HomeContent(
-        user: user,
-        onLoginRequired: _requireLogin,
+    final pages = [
+      _buildHome(),
+      _buildPlaceholderTab(
+        icon: Icons.calendar_month_rounded,
+        title: 'My Bookings',
+        description:
+            'Your upcoming and past dog walks will appear here.',
       ),
-      user == null
-          ? _GuestPage(
-              title: 'My Bookings',
-              subtitle: 'Login to view and manage your bookings.',
-              icon: Icons.calendar_month_rounded,
-              onLogin: () => _requireLogin('bookings'),
-            )
-          : const MyBookingsScreen(),
-      user == null
-          ? _GuestPage(
-              title: 'Your DOJO Account',
-              subtitle:
-                  'Login to save your details and manage your account.',
-              icon: Icons.person_outline_rounded,
-              onLogin: () => _requireLogin('profile'),
-            )
-          : const ProfileScreen(),
+      _buildPlaceholderTab(
+        icon: Icons.person_outline_rounded,
+        title: 'Your Profile',
+        description:
+            'Manage your personal details, dogs and saved addresses.',
+      ),
     ];
 
     return Scaffold(
-      backgroundColor: DojoWalkTheme.background,
-      body: IndexedStack(
-        index: _currentIndex,
-        children: screens,
-      ),
+      backgroundColor: Colors.white,
+      body: SafeArea(child: pages[_selectedTab]),
       bottomNavigationBar: NavigationBar(
-        selectedIndex: _currentIndex,
-        onDestinationSelected: (index) {
-          setState(() => _currentIndex = index);
-        },
+        selectedIndex: _selectedTab,
+        onDestinationSelected: _selectTab,
         backgroundColor: Colors.white,
-        elevation: 8,
-        indicatorColor:
-            DojoWalkTheme.primary.withValues(alpha: 0.12),
+        indicatorColor: dojoOrange.withValues(alpha: 0.13),
         destinations: const [
           NavigationDestination(
             icon: Icon(Icons.home_outlined),
             selectedIcon: Icon(
               Icons.home_rounded,
-              color: DojoWalkTheme.primary,
+              color: dojoOrange,
             ),
             label: 'Home',
           ),
           NavigationDestination(
-            icon: Icon(Icons.receipt_long_outlined),
+            icon: Icon(Icons.calendar_month_outlined),
             selectedIcon: Icon(
-              Icons.receipt_long_rounded,
-              color: DojoWalkTheme.primary,
+              Icons.calendar_month_rounded,
+              color: dojoOrange,
             ),
             label: 'My Bookings',
           ),
@@ -99,7 +152,7 @@ class _HomeScreenState extends State<HomeScreen> {
             icon: Icon(Icons.person_outline_rounded),
             selectedIcon: Icon(
               Icons.person_rounded,
-              color: DojoWalkTheme.primary,
+              color: dojoOrange,
             ),
             label: 'Profile',
           ),
@@ -107,459 +160,355 @@ class _HomeScreenState extends State<HomeScreen> {
       ),
     );
   }
-}
 
-class _HomeContent extends StatelessWidget {
-  const _HomeContent({
-    required this.user,
-    required this.onLoginRequired,
-  });
-
-  final User? user;
-  final void Function(String action) onLoginRequired;
-
-  String get _greeting {
-    final hour = DateTime.now().hour;
-
-    if (hour < 12) return 'Good morning 👋';
-    if (hour < 17) return 'Good afternoon 👋';
-    if (hour < 21) return 'Good evening 👋';
-    return 'Good night 🌙';
-  }
-
-  void _openWalkServices(BuildContext context) {
-    Navigator.of(context).push(
-      MaterialPageRoute<void>(
-        builder: (_) => const WalkServiceScreen(),
-      ),
-    );
-  }
-
-  void _openNotifications(BuildContext context) {
-    Navigator.of(context).push(
-      MaterialPageRoute<void>(
-        builder: (_) => const NotificationsScreen(),
-      ),
-    );
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    return SafeArea(
-      child: StreamBuilder<DocumentSnapshot<Map<String, dynamic>>>(
-        stream: user == null
-            ? null
-            : FirebaseFirestore.instance
-                .collection('users')
-                .doc(user!.uid)
-                .snapshots(),
-        builder: (context, snapshot) {
-          final name =
-              snapshot.data?.data()?['name'] as String? ?? '';
-          final greetingName = name.trim();
-
-          return SingleChildScrollView(
-            padding: const EdgeInsets.fromLTRB(20, 18, 20, 30),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                // Header and notifications
-                Row(
-                  children: [
-                    Expanded(
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Text(
-                            _greeting,
-                            style: const TextStyle(
-                              color: DojoWalkTheme.mutedText,
-                              fontSize: 14,
-                            ),
-                          ),
-                          const SizedBox(height: 5),
-                          Text(
-                            greetingName.isEmpty
-                                ? 'Ready for a walk?'
-                                : 'Hi, $greetingName!',
-                            style: const TextStyle(
-                              color: DojoWalkTheme.text,
-                              fontSize: 24,
-                              fontWeight: FontWeight.w800,
-                            ),
-                          ),
-                        ],
-                      ),
+  Widget _buildHome() {
+    return CustomScrollView(
+      slivers: [
+        SliverPadding(
+          padding: const EdgeInsets.fromLTRB(20, 14, 20, 28),
+          sliver: SliverList(
+            delegate: SliverChildListDelegate([
+              Row(
+                children: [
+                  Container(
+                    height: 46,
+                    width: 46,
+                    decoration: BoxDecoration(
+                      color: dojoOrange,
+                      borderRadius: BorderRadius.circular(14),
                     ),
-                    Material(
+                    child: const Icon(
+                      Icons.pets_rounded,
                       color: Colors.white,
-                      borderRadius: BorderRadius.circular(16),
-                      child: InkWell(
-                        borderRadius: BorderRadius.circular(16),
-                        onTap: () => _openNotifications(context),
-                        child: const SizedBox(
-                          width: 48,
-                          height: 48,
-                          child: Icon(
-                            Icons.notifications_none_rounded,
-                            color: DojoWalkTheme.text,
-                          ),
-                        ),
-                      ),
-                    ),
-                  ],
-                ),
-
-                const SizedBox(height: 22),
-
-                // Pickup address
-                Material(
-                  color: Colors.white,
-                  borderRadius: BorderRadius.circular(16),
-                  child: InkWell(
-                    borderRadius: BorderRadius.circular(16),
-                    onTap: () {
-                      if (user == null) {
-                        onLoginRequired('address');
-                        return;
-                      }
-
-                      ScaffoldMessenger.of(context).showSnackBar(
-                        const SnackBar(
-                          content: Text(
-                            'Address selection will be connected next.',
-                          ),
-                        ),
-                      );
-                    },
-                    child: Padding(
-                      padding: const EdgeInsets.all(15),
-                      child: Row(
-                        children: [
-                          const Icon(
-                            Icons.location_on_outlined,
-                            color: DojoWalkTheme.primary,
-                            size: 27,
-                          ),
-                          const SizedBox(width: 12),
-                          Expanded(
-                            child: Column(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: [
-                                const Text(
-                                  'YOUR LOCATION',
-                                  style: TextStyle(
-                                    color: DojoWalkTheme.mutedText,
-                                    fontSize: 10,
-                                    fontWeight: FontWeight.w700,
-                                    letterSpacing: 1,
-                                  ),
-                                ),
-                                const SizedBox(height: 4),
-                                Text(
-                                  user == null
-                                      ? 'Choose your pickup address'
-                                      : 'Select your saved address',
-                                  style: const TextStyle(
-                                    color: DojoWalkTheme.text,
-                                    fontWeight: FontWeight.w600,
-                                  ),
-                                ),
-                              ],
-                            ),
-                          ),
-                          const Icon(
-                            Icons.keyboard_arrow_down_rounded,
-                            color: DojoWalkTheme.mutedText,
-                          ),
-                        ],
-                      ),
+                      size: 28,
                     ),
                   ),
-                ),
-
-                const SizedBox(height: 22),
-
-                // Hero banner
-                Container(
-                  width: double.infinity,
-                  padding: const EdgeInsets.all(22),
+                  const SizedBox(width: 12),
+                  const Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          'DOJO WALK',
+                          style: TextStyle(
+                            fontWeight: FontWeight.w900,
+                            fontSize: 19,
+                            letterSpacing: 1,
+                            color: dojoText,
+                          ),
+                        ),
+                        Text(
+                          'Happier walks, healthier dogs',
+                          style: TextStyle(
+                            fontSize: 11,
+                            color: Colors.black54,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                  IconButton(
+                    tooltip: 'Notifications',
+                    onPressed: () => _showMessage(
+                      'Notifications will be connected next.',
+                    ),
+                    icon: const Icon(
+                      Icons.notifications_none_rounded,
+                      size: 28,
+                    ),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 24),
+              InkWell(
+                onTap: _openAddressSelector,
+                borderRadius: BorderRadius.circular(14),
+                child: Container(
+                  padding: const EdgeInsets.all(14),
                   decoration: BoxDecoration(
-                    color: DojoWalkTheme.primary,
-                    borderRadius: BorderRadius.circular(24),
+                    color: const Color(0xFFF6F6F6),
+                    borderRadius: BorderRadius.circular(14),
                   ),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
+                  child: Row(
                     children: [
                       const Icon(
-                        Icons.pets_rounded,
+                        Icons.location_on_outlined,
+                        color: dojoOrange,
+                        size: 27,
+                      ),
+                      const SizedBox(width: 10),
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment:
+                              CrossAxisAlignment.start,
+                          children: [
+                            const Text(
+                              'WALK LOCATION',
+                              style: TextStyle(
+                                fontSize: 10,
+                                fontWeight: FontWeight.w800,
+                                color: Colors.black54,
+                                letterSpacing: 1,
+                              ),
+                            ),
+                            const SizedBox(height: 3),
+                            Text(
+                              _selectedAddress,
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
+                              style: const TextStyle(
+                                fontSize: 14,
+                                fontWeight: FontWeight.w700,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                      const Icon(Icons.keyboard_arrow_down_rounded),
+                    ],
+                  ),
+                ),
+              ),
+              const SizedBox(height: 24),
+              Container(
+                padding: const EdgeInsets.all(22),
+                decoration: BoxDecoration(
+                  color: dojoBackground,
+                  borderRadius: BorderRadius.circular(24),
+                ),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Container(
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 10,
+                        vertical: 6,
+                      ),
+                      decoration: BoxDecoration(
                         color: Colors.white,
-                        size: 34,
+                        borderRadius: BorderRadius.circular(20),
                       ),
-                      const SizedBox(height: 16),
-                      const Text(
-                        'Happy dogs.\nHappier days.',
+                      child: const Text(
+                        'YOUR DOG DESERVES THE BEST',
                         style: TextStyle(
-                          color: Colors.white,
-                          fontSize: 27,
-                          height: 1.15,
+                          color: dojoOrange,
+                          fontSize: 9,
                           fontWeight: FontWeight.w900,
+                          letterSpacing: 0.7,
                         ),
                       ),
-                      const SizedBox(height: 8),
-                      const Text(
-                        'Trusted walks, right around the corner.',
-                        style: TextStyle(
-                          color: Colors.white,
-                          fontSize: 14,
-                        ),
+                    ),
+                    const SizedBox(height: 18),
+                    const Text(
+                      'Let’s make\ntails wag!',
+                      style: TextStyle(
+                        fontSize: 34,
+                        height: 1.12,
+                        fontWeight: FontWeight.w900,
+                        color: dojoText,
                       ),
-                      const SizedBox(height: 20),
-                      ElevatedButton(
-                        onPressed: () => _openWalkServices(context),
+                    ),
+                    const SizedBox(height: 12),
+                    const Text(
+                      'Book a trusted dog walker for your best friend.',
+                      style: TextStyle(
+                        fontSize: 14,
+                        height: 1.5,
+                        color: Colors.black54,
+                      ),
+                    ),
+                    const SizedBox(height: 22),
+                    SizedBox(
+                      width: double.infinity,
+                      height: 52,
+                      child: ElevatedButton(
+                        onPressed: () => _openService('Book a Walk'),
                         style: ElevatedButton.styleFrom(
-                          backgroundColor: Colors.white,
-                          foregroundColor: DojoWalkTheme.primary,
-                          padding: const EdgeInsets.symmetric(
-                            horizontal: 20,
-                            vertical: 14,
-                          ),
+                          backgroundColor: dojoOrange,
+                          foregroundColor: Colors.white,
+                          elevation: 0,
                           shape: RoundedRectangleBorder(
                             borderRadius: BorderRadius.circular(14),
                           ),
                         ),
                         child: const Row(
-                          mainAxisSize: MainAxisSize.min,
+                          mainAxisAlignment: MainAxisAlignment.center,
                           children: [
                             Text(
                               'Book a Walk',
                               style: TextStyle(
                                 fontWeight: FontWeight.w800,
+                                fontSize: 15,
                               ),
                             ),
                             SizedBox(width: 8),
-                            Icon(
-                              Icons.arrow_forward_rounded,
-                              size: 19,
-                            ),
+                            Icon(Icons.arrow_forward_rounded),
                           ],
                         ),
                       ),
-                    ],
-                  ),
-                ),
-
-                const SizedBox(height: 28),
-
-                const Text(
-                  'Choose your walk',
-                  style: TextStyle(
-                    color: DojoWalkTheme.text,
-                    fontSize: 19,
-                    fontWeight: FontWeight.w800,
-                  ),
-                ),
-                const SizedBox(height: 14),
-
-                Row(
-                  children: [
-                    Expanded(
-                      child: _WalkOptionCard(
-                        icon: Icons.directions_walk_rounded,
-                        title: 'One-Time Walk',
-                        subtitle: 'Book when you need',
-                        onTap: () => _openWalkServices(context),
-                      ),
-                    ),
-                    const SizedBox(width: 12),
-                    Expanded(
-                      child: _WalkOptionCard(
-                        icon: Icons.calendar_month_rounded,
-                        title: 'Regular Walk',
-                        subtitle: 'Build a routine',
-                        onTap: () {
-                          ScaffoldMessenger.of(context).showSnackBar(
-                            const SnackBar(
-                              content: Text(
-                                'Regular Walk scheduling will be added next.',
-                              ),
-                            ),
-                          );
-                        },
-                      ),
                     ),
                   ],
                 ),
-
-                const SizedBox(height: 28),
-
-                Row(
-                  children: [
-                    const Expanded(
-                      child: Text(
-                        'Your furry friends',
-                        style: TextStyle(
-                          color: DojoWalkTheme.text,
-                          fontSize: 19,
-                          fontWeight: FontWeight.w800,
-                        ),
-                      ),
-                    ),
-                    TextButton(
-                      onPressed: () => _openPets(context),
-                      child: const Text(
-                        'View all',
-                        style: TextStyle(
-                          color: DojoWalkTheme.primary,
-                          fontWeight: FontWeight.w700,
-                        ),
-                      ),
-                    ),
-                  ],
+              ),
+              const SizedBox(height: 30),
+              const Text(
+                'Our Services',
+                style: TextStyle(
+                  fontSize: 22,
+                  fontWeight: FontWeight.w900,
+                  color: dojoText,
                 ),
-
-                const SizedBox(height: 8),
-
-                Material(
-                  color: Colors.white,
+              ),
+              const SizedBox(height: 6),
+              const Text(
+                'Choose the right walk for your dog.',
+                style: TextStyle(
+                  fontSize: 13,
+                  color: Colors.black54,
+                ),
+              ),
+              const SizedBox(height: 16),
+              _ServiceCard(
+                icon: Icons.directions_walk_rounded,
+                title: 'One-Time Walk',
+                subtitle: 'Book a walk whenever you need one.',
+                onTap: () => _openService('One-Time Walk'),
+              ),
+              const SizedBox(height: 12),
+              _ServiceCard(
+                icon: Icons.calendar_month_rounded,
+                title: 'Regular Walks',
+                subtitle: 'Plan a consistent walking routine.',
+                onTap: () => _openService('Regular Walks'),
+              ),
+              const SizedBox(height: 12),
+              _ServiceCard(
+                icon: Icons.pets_rounded,
+                title: 'My Dogs',
+                subtitle: 'Add your dog and manage their details.',
+                onTap: () => _openService('My Dogs'),
+              ),
+              const SizedBox(height: 28),
+              Container(
+                padding: const EdgeInsets.all(18),
+                decoration: BoxDecoration(
+                  color: const Color(0xFFF7F7F7),
                   borderRadius: BorderRadius.circular(18),
-                  child: InkWell(
-                    borderRadius: BorderRadius.circular(18),
-                    onTap: () => _openPets(context),
-                    child: Padding(
-                      padding: const EdgeInsets.all(17),
-                      child: Row(
+                ),
+                child: const Row(
+                  children: [
+                    Icon(
+                      Icons.favorite_rounded,
+                      color: dojoOrange,
+                      size: 28,
+                    ),
+                    SizedBox(width: 14),
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
-                          Container(
-                            width: 50,
-                            height: 50,
-                            decoration: BoxDecoration(
-                              color: DojoWalkTheme.primary.withValues(
-                                alpha: 0.10,
-                              ),
-                              borderRadius: BorderRadius.circular(15),
-                            ),
-                            child: const Icon(
-                              Icons.pets_rounded,
-                              color: DojoWalkTheme.primary,
-                              size: 27,
+                          Text(
+                            'Care for every paw',
+                            style: TextStyle(
+                              fontSize: 15,
+                              fontWeight: FontWeight.w800,
                             ),
                           ),
-                          const SizedBox(width: 13),
-                          Expanded(
-                            child: Column(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: [
-                                Text(
-                                  user == null
-                                      ? 'Add your first dog'
-                                      : 'My Dogs',
-                                  style: const TextStyle(
-                                    color: DojoWalkTheme.text,
-                                    fontWeight: FontWeight.w800,
-                                    fontSize: 15,
-                                  ),
-                                ),
-                                const SizedBox(height: 4),
-                                Text(
-                                  user == null
-                                      ? 'Login to save pet details.'
-                                      : 'Manage your saved pet details',
-                                  style: const TextStyle(
-                                    color: DojoWalkTheme.mutedText,
-                                    fontSize: 12,
-                                  ),
-                                ),
-                              ],
+                          SizedBox(height: 4),
+                          Text(
+                            'A simpler way to organise your dog’s walks.',
+                            style: TextStyle(
+                              fontSize: 12,
+                              height: 1.5,
+                              color: Colors.black54,
                             ),
-                          ),
-                          const Icon(
-                            Icons.chevron_right_rounded,
-                            color: DojoWalkTheme.mutedText,
                           ),
                         ],
                       ),
                     ),
-                  ),
+                  ],
                 ),
+              ),
+            ]),
+          ),
+        ),
+      ],
+    );
+  }
 
-                if (user != null) ...[
-                  const SizedBox(height: 28),
-                  const Text(
-                    'Upcoming Walk',
-                    style: TextStyle(
-                      color: DojoWalkTheme.text,
-                      fontSize: 19,
-                      fontWeight: FontWeight.w800,
-                    ),
-                  ),
-                  const SizedBox(height: 14),
-                  _UpcomingWalkCard(userId: user!.uid),
-                ],
-
-                const SizedBox(height: 28),
-
-                const Text(
-                  'Why DOJO WALK?',
-                  style: TextStyle(
-                    color: DojoWalkTheme.text,
-                    fontSize: 19,
-                    fontWeight: FontWeight.w800,
-                  ),
-                ),
-                const SizedBox(height: 14),
-                Container(
-                  padding: const EdgeInsets.all(18),
-                  decoration: BoxDecoration(
-                    color: Colors.white,
-                    borderRadius: BorderRadius.circular(20),
-                  ),
-                  child: const Column(
-                    children: [
-                      _BenefitRow(
-                        icon: Icons.verified_user_outlined,
-                        title: 'Trusted walkers',
-                        subtitle: 'Reliable care for your dog.',
-                      ),
-                      SizedBox(height: 18),
-                      _BenefitRow(
-                        icon: Icons.flash_on_rounded,
-                        title: 'Easy booking',
-                        subtitle: 'Book in just a few taps.',
-                      ),
-                      SizedBox(height: 18),
-                      _BenefitRow(
-                        icon: Icons.favorite_outline_rounded,
-                        title: 'Happy dogs',
-                        subtitle: 'Every walk made with care.',
-                      ),
-                    ],
-                  ),
-                ),
-              ],
+  Widget _buildPlaceholderTab({
+    required IconData icon,
+    required String title,
+    required String description,
+  }) {
+    return Center(
+      child: Padding(
+        padding: const EdgeInsets.all(28),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Container(
+              width: 84,
+              height: 84,
+              decoration: BoxDecoration(
+                color: dojoOrange.withValues(alpha: 0.10),
+                shape: BoxShape.circle,
+              ),
+              child: Icon(icon, color: dojoOrange, size: 42),
             ),
-          );
-        },
+            const SizedBox(height: 22),
+            Text(
+              title,
+              style: const TextStyle(
+                fontSize: 24,
+                fontWeight: FontWeight.w900,
+              ),
+            ),
+            const SizedBox(height: 10),
+            Text(
+              description,
+              textAlign: TextAlign.center,
+              style: const TextStyle(
+                fontSize: 14,
+                height: 1.6,
+                color: Colors.black54,
+              ),
+            ),
+            const SizedBox(height: 20),
+            const Text(
+              'This screen will be connected in the next steps.',
+              textAlign: TextAlign.center,
+              style: TextStyle(
+                fontSize: 12,
+                color: Colors.black45,
+              ),
+            ),
+          ],
+        ),
       ),
     );
   }
 
-  void _openPets(BuildContext context) {
-    if (user == null) {
-      onLoginRequired('pets');
+  void _openService(String service) {
+    if (service == 'Book a Walk' ||
+        service == 'One-Time Walk' ||
+        service == 'Regular Walks') {
+      _showMessage(
+        '$service selected. The new booking flow is the next step.',
+      );
       return;
     }
 
-    Navigator.of(context).push(
-      MaterialPageRoute<void>(
-        builder: (_) => const MyPetsScreen(),
-      ),
-    );
+    if (service == 'My Dogs') {
+      _showMessage(
+        'Dog profiles will be connected to your account next.',
+      );
+    }
   }
 }
 
-class _WalkOptionCard extends StatelessWidget {
-  const _WalkOptionCard({
+class _ServiceCard extends StatelessWidget {
+  const _ServiceCard({
     required this.icon,
     required this.title,
     required this.subtitle,
@@ -579,309 +528,51 @@ class _WalkOptionCard extends StatelessWidget {
       child: InkWell(
         onTap: onTap,
         borderRadius: BorderRadius.circular(18),
-        child: Padding(
-          padding: const EdgeInsets.all(15),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Icon(icon, color: DojoWalkTheme.primary, size: 30),
-              const SizedBox(height: 13),
-              Text(
-                title,
-                style: const TextStyle(
-                  color: DojoWalkTheme.text,
-                  fontWeight: FontWeight.w800,
-                  fontSize: 14,
-                ),
-              ),
-              const SizedBox(height: 5),
-              Text(
-                subtitle,
-                style: const TextStyle(
-                  color: DojoWalkTheme.mutedText,
-                  fontSize: 12,
-                ),
-              ),
-            ],
-          ),
-        ),
-      ),
-    );
-  }
-}
-
-class _UpcomingWalkCard extends StatelessWidget {
-  const _UpcomingWalkCard({required this.userId});
-
-  final String userId;
-
-  @override
-  Widget build(BuildContext context) {
-    return StreamBuilder<QuerySnapshot<Map<String, dynamic>>>(
-      stream: FirebaseFirestore.instance
-          .collection('bookings')
-          .where('customerId', isEqualTo: userId)
-          .snapshots(),
-      builder: (context, snapshot) {
-        if (snapshot.hasError) {
-          return const _InfoCard(
-            icon: Icons.cloud_off_outlined,
-            title: 'Could not load bookings',
-            subtitle: 'Please check your connection and try again.',
-          );
-        }
-
-        if (snapshot.connectionState == ConnectionState.waiting &&
-            !snapshot.hasData) {
-          return const Padding(
-            padding: EdgeInsets.all(20),
-            child: Center(
-              child: CircularProgressIndicator(
-                color: DojoWalkTheme.primary,
-              ),
-            ),
-          );
-        }
-
-        final docs = snapshot.data?.docs ?? [];
-
-        final upcoming = docs.where((doc) {
-          final data = doc.data();
-          final status = data['status'] as String? ?? '';
-          final scheduledAt = data['scheduledAt'];
-
-          if (scheduledAt is! Timestamp) return false;
-
-          final date = scheduledAt.toDate();
-          final inactive = [
-            'completed',
-            'cancelled',
-          ].contains(status);
-
-          return !inactive && date.isAfter(DateTime.now());
-        }).toList();
-
-        upcoming.sort((a, b) {
-          final aDate =
-              (a.data()['scheduledAt'] as Timestamp).toDate();
-          final bDate =
-              (b.data()['scheduledAt'] as Timestamp).toDate();
-          return aDate.compareTo(bDate);
-        });
-
-        if (upcoming.isEmpty) {
-          return const _InfoCard(
-            icon: Icons.calendar_today_outlined,
-            title: 'No upcoming walk',
-            subtitle: 'Your next booking will appear here.',
-          );
-        }
-
-        final booking = upcoming.first.data();
-        final petName = booking['petName'] as String? ?? 'Your dog';
-        final status = booking['status'] as String? ?? 'pending';
-        final date = (booking['scheduledAt'] as Timestamp).toDate();
-
-        final dateText =
-            MaterialLocalizations.of(context).formatMediumDate(date);
-        final timeText = MaterialLocalizations.of(context)
-            .formatTimeOfDay(TimeOfDay.fromDateTime(date));
-
-        return _InfoCard(
-          icon: Icons.pets_rounded,
-          title: petName,
-          subtitle: '$dateText · $timeText\n${_statusLabel(status)}',
-        );
-      },
-    );
-  }
-
-  String _statusLabel(String status) {
-    switch (status) {
-      case 'finding_walker':
-        return 'Finding walker';
-      case 'walker_assigned':
-        return 'Walker assigned';
-      case 'walker_arriving':
-        return 'Walker arriving';
-      case 'walk_started':
-        return 'Walk in progress';
-      case 'pending':
-        return 'Scheduled';
-      default:
-        return 'Upcoming';
-    }
-  }
-}
-
-class _InfoCard extends StatelessWidget {
-  const _InfoCard({
-    required this.icon,
-    required this.title,
-    required this.subtitle,
-  });
-
-  final IconData icon;
-  final String title;
-  final String subtitle;
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      width: double.infinity,
-      padding: const EdgeInsets.all(19),
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(20),
-      ),
-      child: Row(
-        children: [
-          Container(
-            width: 48,
-            height: 48,
-            decoration: BoxDecoration(
-              color: DojoWalkTheme.primary.withValues(alpha: 0.10),
-              borderRadius: BorderRadius.circular(14),
-            ),
-            child: Icon(icon, color: DojoWalkTheme.primary),
-          ),
-          const SizedBox(width: 14),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  title,
-                  style: const TextStyle(
-                    color: DojoWalkTheme.text,
-                    fontSize: 15,
-                    fontWeight: FontWeight.w800,
-                  ),
-                ),
-                const SizedBox(height: 5),
-                Text(
-                  subtitle,
-                  style: const TextStyle(
-                    color: DojoWalkTheme.mutedText,
-                    fontSize: 12,
-                    height: 1.5,
-                  ),
-                ),
-              ],
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-}
-
-class _BenefitRow extends StatelessWidget {
-  const _BenefitRow({
-    required this.icon,
-    required this.title,
-    required this.subtitle,
-  });
-
-  final IconData icon;
-  final String title;
-  final String subtitle;
-
-  @override
-  Widget build(BuildContext context) {
-    return Row(
-      children: [
-        Container(
-          width: 44,
-          height: 44,
+        child: Container(
+          padding: const EdgeInsets.all(16),
           decoration: BoxDecoration(
-            color: DojoWalkTheme.primary.withValues(alpha: 0.10),
-            borderRadius: BorderRadius.circular(13),
+            borderRadius: BorderRadius.circular(18),
+            border: Border.all(color: const Color(0xFFEEEEEE)),
           ),
-          child: Icon(icon, color: DojoWalkTheme.primary, size: 22),
-        ),
-        const SizedBox(width: 13),
-        Expanded(
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
+          child: Row(
             children: [
-              Text(
-                title,
-                style: const TextStyle(
-                  color: DojoWalkTheme.text,
-                  fontSize: 14,
-                  fontWeight: FontWeight.w800,
+              Container(
+                width: 52,
+                height: 52,
+                decoration: BoxDecoration(
+                  color: dojoOrange.withValues(alpha: 0.10),
+                  borderRadius: BorderRadius.circular(15),
+                ),
+                child: Icon(icon, color: dojoOrange, size: 27),
+              ),
+              const SizedBox(width: 14),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      title,
+                      style: const TextStyle(
+                        fontSize: 15,
+                        fontWeight: FontWeight.w800,
+                        color: dojoText,
+                      ),
+                    ),
+                    const SizedBox(height: 5),
+                    Text(
+                      subtitle,
+                      style: const TextStyle(
+                        fontSize: 12,
+                        height: 1.4,
+                        color: Colors.black54,
+                      ),
+                    ),
+                  ],
                 ),
               ),
-              const SizedBox(height: 3),
-              Text(
-                subtitle,
-                style: const TextStyle(
-                  color: DojoWalkTheme.mutedText,
-                  fontSize: 12,
-                ),
-              ),
-            ],
-          ),
-        ),
-      ],
-    );
-  }
-}
-
-class _GuestPage extends StatelessWidget {
-  const _GuestPage({
-    required this.title,
-    required this.subtitle,
-    required this.icon,
-    required this.onLogin,
-  });
-
-  final String title;
-  final String subtitle;
-  final IconData icon;
-  final VoidCallback onLogin;
-
-  @override
-  Widget build(BuildContext context) {
-    return SafeArea(
-      child: Center(
-        child: Padding(
-          padding: const EdgeInsets.all(28),
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              Icon(icon, size: 58, color: DojoWalkTheme.primary),
-              const SizedBox(height: 18),
-              Text(
-                title,
-                style: const TextStyle(
-                  color: DojoWalkTheme.text,
-                  fontSize: 23,
-                  fontWeight: FontWeight.w800,
-                ),
-              ),
-              const SizedBox(height: 10),
-              Text(
-                subtitle,
-                textAlign: TextAlign.center,
-                style: const TextStyle(
-                  color: DojoWalkTheme.mutedText,
-                  height: 1.5,
-                ),
-              ),
-              const SizedBox(height: 22),
-              ElevatedButton(
-                onPressed: onLogin,
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: DojoWalkTheme.primary,
-                  foregroundColor: Colors.white,
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: 28,
-                    vertical: 14,
-                  ),
-                ),
-                child: const Text('Login / Sign up'),
+              const Icon(
+                Icons.chevron_right_rounded,
+                color: Colors.black45,
               ),
             ],
           ),
