@@ -2,6 +2,7 @@
 import 'dart:async';
 
 import 'package:flutter/material.dart';
+import '../../home/screens/home_screen.dart';
 
 class SplashScreen extends StatefulWidget {
   const SplashScreen({super.key});
@@ -22,7 +23,7 @@ class _SplashScreenState extends State<SplashScreen> {
 
       Navigator.of(context).pushReplacement(
         MaterialPageRoute<void>(
-          builder: (_) => const _WelcomeScreen(),
+          builder: (_) => const HomeScreen(),
         ),
       );
     });
@@ -89,105 +90,6 @@ class _SplashScreenState extends State<SplashScreen> {
               ),
             ),
           ],
-        ),
-      ),
-    );
-  }
-}
-
-class _WelcomeScreen extends StatelessWidget {
-  const _WelcomeScreen();
-
-  @override
-  Widget build(BuildContext context) {
-    const orange = Color(0xFFFF7900);
-
-    return Scaffold(
-      backgroundColor: const Color(0xFFFFFAF5),
-      body: SafeArea(
-        child: Padding(
-          padding: const EdgeInsets.all(24),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              const Spacer(),
-              Container(
-                width: 76,
-                height: 76,
-                decoration: BoxDecoration(
-                  color: orange,
-                  borderRadius: BorderRadius.circular(23),
-                ),
-                child: const Icon(
-                  Icons.pets_rounded,
-                  color: Colors.white,
-                  size: 42,
-                ),
-              ),
-              const SizedBox(height: 28),
-              const Text(
-                'Every walk,\na happier tail.',
-                style: TextStyle(
-                  fontSize: 38,
-                  height: 1.15,
-                  fontWeight: FontWeight.w900,
-                  color: Color(0xFF202020),
-                ),
-              ),
-              const SizedBox(height: 16),
-              const Text(
-                'Book trusted dog walkers and make '
-                'every walk special for your best friend.',
-                style: TextStyle(
-                  fontSize: 16,
-                  height: 1.6,
-                  color: Colors.black54,
-                ),
-              ),
-              const Spacer(),
-              SizedBox(
-                width: double.infinity,
-                height: 56,
-                child: ElevatedButton(
-                  onPressed: () {
-                    ScaffoldMessenger.of(context).showSnackBar(
-                      const SnackBar(
-                        content: Text(
-                          'Next step: connect the new Home Screen.',
-                        ),
-                      ),
-                    );
-                  },
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: orange,
-                    foregroundColor: Colors.white,
-                    elevation: 0,
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(16),
-                    ),
-                  ),
-                  child: const Text(
-                    'Explore DOJO WALK',
-                    style: TextStyle(
-                      fontSize: 16,
-                      fontWeight: FontWeight.w800,
-                    ),
-                  ),
-                ),
-              ),
-              const SizedBox(height: 20),
-              const Center(
-                child: Text(
-                  'Trusted walks. Happier dogs.',
-                  style: TextStyle(
-                    fontSize: 12,
-                    color: Colors.black45,
-                  ),
-                ),
-              ),
-              const SizedBox(height: 16),
-            ],
-          ),
         ),
       ),
     );
