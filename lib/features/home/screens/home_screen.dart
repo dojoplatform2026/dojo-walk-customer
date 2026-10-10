@@ -4,6 +4,7 @@ import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 
 import '../../../app/theme.dart';
+import '../../notifications/screens/notifications_screen.dart';
 import '../../../screens/auth/login_screen.dart';
 import '../../../screens/booking/my_bookings_screen.dart';
 import '../../../screens/booking/walk_service_screen.dart';
@@ -21,17 +22,17 @@ class _HomeScreenState extends State<HomeScreen> {
   int _currentIndex = 0;
 
   void _requireLogin(String action) {
-    if (FirebaseAuth.instance.currentUser != null) {
-      return;
-    }
+    if (FirebaseAuth.instance.currentUser != null) return;
 
-    Navigator.of(context).push(
-      MaterialPageRoute<void>(
-        builder: (_) => const LoginScreen(),
-      ),
-    ).then((_) {
-      if (mounted) setState(() {});
-    });
+    Navigator.of(context)
+        .push(
+          MaterialPageRoute<void>(
+            builder: (_) => const LoginScreen(),
+          ),
+        )
+        .then((_) {
+          if (mounted) setState(() {});
+        });
   }
 
   @override
@@ -46,8 +47,7 @@ class _HomeScreenState extends State<HomeScreen> {
       user == null
           ? _GuestPage(
               title: 'My Bookings',
-              subtitle:
-                  'Login to view and manage your bookings.',
+              subtitle: 'Login to view and manage your bookings.',
               icon: Icons.calendar_month_rounded,
               onLogin: () => _requireLogin('bookings'),
             )
@@ -56,7 +56,7 @@ class _HomeScreenState extends State<HomeScreen> {
           ? _GuestPage(
               title: 'Your DOJO Account',
               subtitle:
-                  'Login when you want to save your details or manage your account.',
+                  'Login to save your details and manage your account.',
               icon: Icons.person_outline_rounded,
               onLogin: () => _requireLogin('profile'),
             )
@@ -135,6 +135,14 @@ class _HomeContent extends StatelessWidget {
     );
   }
 
+  void _openNotifications(BuildContext context) {
+    Navigator.of(context).push(
+      MaterialPageRoute<void>(
+        builder: (_) => const NotificationsScreen(),
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     return SafeArea(
@@ -148,7 +156,6 @@ class _HomeContent extends StatelessWidget {
         builder: (context, snapshot) {
           final name =
               snapshot.data?.data()?['name'] as String? ?? '';
-
           final greetingName = name.trim();
 
           return SingleChildScrollView(
@@ -189,15 +196,7 @@ class _HomeContent extends StatelessWidget {
                       borderRadius: BorderRadius.circular(16),
                       child: InkWell(
                         borderRadius: BorderRadius.circular(16),
-                        onTap: () {
-                          ScaffoldMessenger.of(context).showSnackBar(
-                            const SnackBar(
-                              content: Text(
-                                'Notifications screen will be connected next.',
-                              ),
-                            ),
-                          );
-                        },
+                        onTap: () => _openNotifications(context),
                         child: const SizedBox(
                           width: 48,
                           height: 48,
@@ -213,7 +212,7 @@ class _HomeContent extends StatelessWidget {
 
                 const SizedBox(height: 22),
 
-                // Address selector
+                // Pickup address
                 Material(
                   color: Colors.white,
                   borderRadius: BorderRadius.circular(16),
@@ -281,7 +280,7 @@ class _HomeContent extends StatelessWidget {
 
                 const SizedBox(height: 22),
 
-                // Hero
+                // Hero banner
                 Container(
                   width: double.infinity,
                   padding: const EdgeInsets.all(22),
@@ -339,7 +338,10 @@ class _HomeContent extends StatelessWidget {
                               ),
                             ),
                             SizedBox(width: 8),
-                            Icon(Icons.arrow_forward_rounded, size: 19),
+                            Icon(
+                              Icons.arrow_forward_rounded,
+                              size: 19,
+                            ),
                           ],
                         ),
                       ),
@@ -404,18 +406,7 @@ class _HomeContent extends StatelessWidget {
                       ),
                     ),
                     TextButton(
-                      onPressed: () {
-                        if (user == null) {
-                          onLoginRequired('pets');
-                          return;
-                        }
-
-                        Navigator.of(context).push(
-                          MaterialPageRoute<void>(
-                            builder: (_) => const MyPetsScreen(),
-                          ),
-                        );
-                      },
+                      onPressed: () => _openPets(context),
                       child: const Text(
                         'View all',
                         style: TextStyle(
@@ -434,18 +425,7 @@ class _HomeContent extends StatelessWidget {
                   borderRadius: BorderRadius.circular(18),
                   child: InkWell(
                     borderRadius: BorderRadius.circular(18),
-                    onTap: () {
-                      if (user == null) {
-                        onLoginRequired('pets');
-                        return;
-                      }
-
-                      Navigator.of(context).push(
-                        MaterialPageRoute<void>(
-                          builder: (_) => const MyPetsScreen(),
-                        ),
-                      );
-                    },
+                    onTap: () => _openPets(context),
                     child: Padding(
                       padding: const EdgeInsets.all(17),
                       child: Row(
@@ -454,8 +434,9 @@ class _HomeContent extends StatelessWidget {
                             width: 50,
                             height: 50,
                             decoration: BoxDecoration(
-                              color: DojoWalkTheme.primary
-                                  .withValues(alpha: 0.10),
+                              color: DojoWalkTheme.primary.withValues(
+                                alpha: 0.10,
+                              ),
                               borderRadius: BorderRadius.circular(15),
                             ),
                             child: const Icon(
@@ -482,7 +463,7 @@ class _HomeContent extends StatelessWidget {
                                 const SizedBox(height: 4),
                                 Text(
                                   user == null
-                                      ? 'Login when you want to save pet details.'
+                                      ? 'Login to save pet details.'
                                       : 'Manage your saved pet details',
                                   style: const TextStyle(
                                     color: DojoWalkTheme.mutedText,
@@ -562,6 +543,19 @@ class _HomeContent extends StatelessWidget {
       ),
     );
   }
+
+  void _openPets(BuildContext context) {
+    if (user == null) {
+      onLoginRequired('pets');
+      return;
+    }
+
+    Navigator.of(context).push(
+      MaterialPageRoute<void>(
+        builder: (_) => const MyPetsScreen(),
+      ),
+    );
+  }
 }
 
 class _WalkOptionCard extends StatelessWidget {
@@ -630,7 +624,7 @@ class _UpcomingWalkCard extends StatelessWidget {
           .snapshots(),
       builder: (context, snapshot) {
         if (snapshot.hasError) {
-          return _InfoCard(
+          return const _InfoCard(
             icon: Icons.cloud_off_outlined,
             title: 'Could not load bookings',
             subtitle: 'Please check your connection and try again.',
@@ -659,12 +653,12 @@ class _UpcomingWalkCard extends StatelessWidget {
           if (scheduledAt is! Timestamp) return false;
 
           final date = scheduledAt.toDate();
-          final active = ![
+          final inactive = [
             'completed',
             'cancelled',
           ].contains(status);
 
-          return active && date.isAfter(DateTime.now());
+          return !inactive && date.isAfter(DateTime.now());
         }).toList();
 
         upcoming.sort((a, b) {
@@ -857,11 +851,7 @@ class _GuestPage extends StatelessWidget {
           child: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
-              Icon(
-                icon,
-                size: 58,
-                color: DojoWalkTheme.primary,
-              ),
+              Icon(icon, size: 58, color: DojoWalkTheme.primary),
               const SizedBox(height: 18),
               Text(
                 title,
