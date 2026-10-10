@@ -1,10 +1,10 @@
+
 import 'dart:async';
 
-import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 
 import '../../app/theme.dart';
-import '../home/home_screen.dart';
+import '../../features/home/screens/home_screen.dart';
 
 class SplashScreen extends StatefulWidget {
   const SplashScreen({super.key});
@@ -27,34 +27,16 @@ class _SplashScreenState extends State<SplashScreen> {
     );
   }
 
-  Future<void> _openHome() async {
+  void _openHome() {
     if (!mounted || _isNavigating) return;
 
     _isNavigating = true;
 
-    try {
-      // Firebase login session ko check karein.
-      // Login na hone par bhi Guest Home khulega.
-      final user = FirebaseAuth.instance.currentUser;
-
-      if (!mounted) return;
-
-      Navigator.of(context).pushReplacement(
-        MaterialPageRoute<void>(
-          builder: (_) => const HomeScreen(),
-        ),
-      );
-    } catch (_) {
-      _isNavigating = false;
-
-      if (!mounted) return;
-
-      Navigator.of(context).pushReplacement(
-        MaterialPageRoute<void>(
-          builder: (_) => const HomeScreen(),
-        ),
-      );
-    }
+    Navigator.of(context).pushReplacement(
+      MaterialPageRoute<void>(
+        builder: (_) => const HomeScreen(),
+      ),
+    );
   }
 
   @override
@@ -80,8 +62,9 @@ class _SplashScreenState extends State<SplashScreen> {
                   borderRadius: BorderRadius.circular(32),
                   boxShadow: [
                     BoxShadow(
-                      color: DojoWalkTheme.primary
-                          .withValues(alpha: 0.18),
+                      color: DojoWalkTheme.primary.withValues(
+                        alpha: 0.18,
+                      ),
                       blurRadius: 28,
                       offset: const Offset(0, 12),
                     ),
