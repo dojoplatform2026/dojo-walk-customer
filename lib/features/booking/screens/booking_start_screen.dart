@@ -1,6 +1,8 @@
 
 import 'package:flutter/material.dart';
 
+import 'dog_details_screen.dart';
+
 const Color bookingOrange = Color(0xFFFF7900);
 const Color bookingText = Color(0xFF202020);
 
@@ -32,10 +34,10 @@ class _BookingStartScreenState extends State<BookingStartScreen> {
   }
 
   void _continueBooking() {
-    ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(
-        content: Text(
-          'Next step: connect dog details and pickup address.',
+    Navigator.of(context).push(
+      MaterialPageRoute<void>(
+        builder: (_) => DogDetailsScreen(
+          walkType: _selectedType,
         ),
       ),
     );
@@ -127,8 +129,8 @@ class _BookingStartScreenState extends State<BookingStartScreen> {
                         Expanded(
                           child: Text(
                             isOneTime
-                                ? 'Next, you’ll choose your dog, pickup address, and preferred walk time.'
-                                : 'Next, you’ll provide your dog and pickup details before setting up a regular walking plan.',
+                                ? 'Next, add your dog’s details, pickup address and preferred walk time.'
+                                : 'Next, add your dog’s details and pickup address before setting up your regular walking plan.',
                             style: const TextStyle(
                               fontSize: 13,
                               height: 1.5,
