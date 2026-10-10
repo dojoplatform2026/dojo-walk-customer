@@ -2,9 +2,11 @@
 import 'package:flutter/material.dart';
 
 import 'booking_start_screen.dart';
+import 'walk_schedule_screen.dart';
 
 const Color addressOrange = Color(0xFFFF7900);
 const Color addressText = Color(0xFF202020);
+const Color addressBackground = Color(0xFFFFFAF5);
 
 class PickupAddressScreen extends StatefulWidget {
   const PickupAddressScreen({
@@ -56,7 +58,7 @@ class _PickupAddressScreenState extends State<PickupAddressScreen> {
 
     Navigator.of(context).push(
       MaterialPageRoute<void>(
-        builder: (_) => PickupAddressReviewScreen(
+        builder: (_) => WalkScheduleScreen(
           walkType: widget.walkType,
           dogDetails: widget.dogDetails,
           pickupAddress: pickupAddress,
@@ -68,12 +70,16 @@ class _PickupAddressScreenState extends State<PickupAddressScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: const Color(0xFFFFFAF5),
+      backgroundColor: addressBackground,
       appBar: AppBar(
-        backgroundColor: const Color(0xFFFFFAF5),
+        backgroundColor: addressBackground,
+        elevation: 0,
         title: const Text(
           'Pickup Address',
-          style: TextStyle(fontWeight: FontWeight.w800),
+          style: TextStyle(
+            fontWeight: FontWeight.w800,
+            color: addressText,
+          ),
         ),
       ),
       body: SafeArea(
@@ -101,12 +107,15 @@ class _PickupAddressScreenState extends State<PickupAddressScreen> {
                 ),
               ),
               const SizedBox(height: 24),
+
               Container(
                 padding: const EdgeInsets.all(16),
                 decoration: BoxDecoration(
                   color: Colors.white,
                   borderRadius: BorderRadius.circular(18),
-                  border: Border.all(color: const Color(0xFFEEEEEE)),
+                  border: Border.all(
+                    color: const Color(0xFFEEEEEE),
+                  ),
                 ),
                 child: const Row(
                   children: [
@@ -128,12 +137,15 @@ class _PickupAddressScreenState extends State<PickupAddressScreen> {
                   ],
                 ),
               ),
+
               const SizedBox(height: 24),
+
               const Text(
                 'Save address as',
                 style: TextStyle(fontWeight: FontWeight.w800),
               ),
               const SizedBox(height: 10),
+
               Wrap(
                 spacing: 10,
                 children: ['Home', 'Work', 'Other'].map((type) {
@@ -142,7 +154,8 @@ class _PickupAddressScreenState extends State<PickupAddressScreen> {
                   return ChoiceChip(
                     label: Text(type),
                     selected: selected,
-                    selectedColor: addressOrange.withValues(alpha: 0.15),
+                    selectedColor:
+                        addressOrange.withValues(alpha: 0.15),
                     checkmarkColor: addressOrange,
                     onSelected: (_) {
                       setState(() => _addressType = type);
@@ -150,11 +163,14 @@ class _PickupAddressScreenState extends State<PickupAddressScreen> {
                   );
                 }).toList(),
               ),
+
               const SizedBox(height: 22),
+
               _fieldLabel('House / Flat / Building *'),
               TextFormField(
                 controller: _addressController,
                 textCapitalization: TextCapitalization.words,
+                textInputAction: TextInputAction.next,
                 decoration: _decoration('House number and street'),
                 validator: (value) {
                   if (value == null || value.trim().isEmpty) {
@@ -163,11 +179,14 @@ class _PickupAddressScreenState extends State<PickupAddressScreen> {
                   return null;
                 },
               ),
+
               const SizedBox(height: 18),
+
               _fieldLabel('Area / Locality *'),
               TextFormField(
                 controller: _areaController,
                 textCapitalization: TextCapitalization.words,
+                textInputAction: TextInputAction.next,
                 decoration: _decoration('Enter your area or locality'),
                 validator: (value) {
                   if (value == null || value.trim().isEmpty) {
@@ -176,18 +195,24 @@ class _PickupAddressScreenState extends State<PickupAddressScreen> {
                   return null;
                 },
               ),
+
               const SizedBox(height: 18),
+
               _fieldLabel('Landmark (optional)'),
               TextFormField(
                 controller: _landmarkController,
                 textCapitalization: TextCapitalization.words,
+                textInputAction: TextInputAction.next,
                 decoration: _decoration('Nearby landmark'),
               ),
+
               const SizedBox(height: 18),
+
               _fieldLabel('City *'),
               TextFormField(
                 controller: _cityController,
                 textCapitalization: TextCapitalization.words,
+                textInputAction: TextInputAction.next,
                 decoration: _decoration('Enter city'),
                 validator: (value) {
                   if (value == null || value.trim().isEmpty) {
@@ -196,22 +221,28 @@ class _PickupAddressScreenState extends State<PickupAddressScreen> {
                   return null;
                 },
               ),
+
               const SizedBox(height: 18),
+
               _fieldLabel('PIN code *'),
               TextFormField(
                 controller: _pincodeController,
                 keyboardType: TextInputType.number,
                 maxLength: 6,
+                textInputAction: TextInputAction.done,
                 decoration: _decoration('6-digit PIN code'),
                 validator: (value) {
                   final pin = value?.trim() ?? '';
+
                   if (!RegExp(r'^\d{6}$').hasMatch(pin)) {
                     return 'Enter a valid 6-digit PIN code';
                   }
                   return null;
                 },
               ),
-              const SizedBox(height: 12),
+
+              const SizedBox(height: 16),
+
               SizedBox(
                 height: 54,
                 child: ElevatedButton(
@@ -228,7 +259,7 @@ class _PickupAddressScreenState extends State<PickupAddressScreen> {
                     mainAxisAlignment: MainAxisAlignment.center,
                     children: [
                       Text(
-                        'Continue',
+                        'Continue to Schedule',
                         style: TextStyle(
                           fontSize: 16,
                           fontWeight: FontWeight.w800,
@@ -255,6 +286,7 @@ class _PickupAddressScreenState extends State<PickupAddressScreen> {
         style: const TextStyle(
           fontSize: 13,
           fontWeight: FontWeight.w800,
+          color: addressText,
         ),
       ),
     );
@@ -272,11 +304,15 @@ class _PickupAddressScreenState extends State<PickupAddressScreen> {
       ),
       border: OutlineInputBorder(
         borderRadius: BorderRadius.circular(14),
-        borderSide: const BorderSide(color: Color(0xFFE7E7E7)),
+        borderSide: const BorderSide(
+          color: Color(0xFFE7E7E7),
+        ),
       ),
       enabledBorder: OutlineInputBorder(
         borderRadius: BorderRadius.circular(14),
-        borderSide: const BorderSide(color: Color(0xFFE7E7E7)),
+        borderSide: const BorderSide(
+          color: Color(0xFFE7E7E7),
+        ),
       ),
       focusedBorder: OutlineInputBorder(
         borderRadius: BorderRadius.circular(14),
@@ -285,112 +321,15 @@ class _PickupAddressScreenState extends State<PickupAddressScreen> {
           width: 1.5,
         ),
       ),
-    );
-  }
-}
-
-class PickupAddressReviewScreen extends StatelessWidget {
-  const PickupAddressReviewScreen({
-    super.key,
-    required this.walkType,
-    required this.dogDetails,
-    required this.pickupAddress,
-  });
-
-  final WalkBookingType walkType;
-  final Map<String, dynamic> dogDetails;
-  final Map<String, dynamic> pickupAddress;
-
-  @override
-  Widget build(BuildContext context) {
-    final fullAddress = [
-      pickupAddress['address'],
-      pickupAddress['area'],
-      pickupAddress['landmark'],
-      pickupAddress['city'],
-      pickupAddress['pincode'],
-    ].where((value) => value != null && value.toString().isNotEmpty).join(', ');
-
-    return Scaffold(
-      backgroundColor: const Color(0xFFFFFAF5),
-      appBar: AppBar(
-        backgroundColor: const Color(0xFFFFFAF5),
-        title: const Text('Review Pickup'),
+      errorBorder: OutlineInputBorder(
+        borderRadius: BorderRadius.circular(14),
+        borderSide: const BorderSide(color: Colors.redAccent),
       ),
-      body: Padding(
-        padding: const EdgeInsets.all(20),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            const Text(
-              'Pickup address added',
-              style: TextStyle(
-                fontSize: 25,
-                fontWeight: FontWeight.w900,
-              ),
-            ),
-            const SizedBox(height: 20),
-            Container(
-              width: double.infinity,
-              padding: const EdgeInsets.all(18),
-              decoration: BoxDecoration(
-                color: Colors.white,
-                borderRadius: BorderRadius.circular(18),
-                border: Border.all(color: const Color(0xFFEEEEEE)),
-              ),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Row(
-                    children: [
-                      const Icon(
-                        Icons.location_on_rounded,
-                        color: addressOrange,
-                      ),
-                      const SizedBox(width: 8),
-                      Text(
-                        pickupAddress['label'].toString(),
-                        style: const TextStyle(
-                          fontWeight: FontWeight.w800,
-                        ),
-                      ),
-                    ],
-                  ),
-                  const SizedBox(height: 12),
-                  Text(
-                    fullAddress,
-                    style: const TextStyle(
-                      fontSize: 15,
-                      height: 1.6,
-                    ),
-                  ),
-                ],
-              ),
-            ),
-            const SizedBox(height: 20),
-            Text('Dog: ${dogDetails['name'] ?? 'Not provided'}'),
-            const SizedBox(height: 8),
-            Text(
-              'Walk type: ${walkType == WalkBookingType.regular ? 'Regular Walks' : 'One-Time Walk'}',
-            ),
-            const SizedBox(height: 18),
-            const Text(
-              'Next, we will add the date, time and walk duration.',
-              style: TextStyle(
-                color: Colors.black54,
-                height: 1.5,
-              ),
-            ),
-            const Spacer(),
-            SizedBox(
-              width: double.infinity,
-              height: 52,
-              child: OutlinedButton(
-                onPressed: () => Navigator.pop(context),
-                child: const Text('Edit Address'),
-              ),
-            ),
-          ],
+      focusedErrorBorder: OutlineInputBorder(
+        borderRadius: BorderRadius.circular(14),
+        borderSide: const BorderSide(
+          color: Colors.redAccent,
+          width: 1.5,
         ),
       ),
     );
