@@ -1,6 +1,8 @@
 
 import 'package:flutter/material.dart';
 
+import '../../booking/screens/booking_start_screen.dart';
+
 const Color dojoOrange = Color(0xFFFF7900);
 const Color dojoBackground = Color(0xFFFFFAF5);
 const Color dojoText = Color(0xFF202020);
@@ -23,6 +25,8 @@ class _HomeScreenState extends State<HomeScreen> {
   }
 
   void _openAddressSelector() {
+    final controller = TextEditingController();
+
     showModalBottomSheet<void>(
       context: context,
       isScrollControlled: true,
@@ -33,8 +37,6 @@ class _HomeScreenState extends State<HomeScreen> {
         ),
       ),
       builder: (sheetContext) {
-        final controller = TextEditingController();
-
         return Padding(
           padding: EdgeInsets.fromLTRB(
             24,
@@ -86,7 +88,14 @@ class _HomeScreenState extends State<HomeScreen> {
                   onPressed: () {
                     final address = controller.text.trim();
 
-                    if (address.isEmpty) return;
+                    if (address.isEmpty) {
+                      ScaffoldMessenger.of(sheetContext).showSnackBar(
+                        const SnackBar(
+                          content: Text('Please enter your address.'),
+                        ),
+                      );
+                      return;
+                    }
 
                     setState(() => _selectedAddress = address);
                     Navigator.pop(sheetContext);
@@ -98,11 +107,34 @@ class _HomeScreenState extends State<HomeScreen> {
           ),
         );
       },
-    );
+    ).whenComplete(controller.dispose);
   }
 
   void _selectTab(int index) {
     setState(() => _selectedTab = index);
+  }
+
+  void _openService(String service) {
+    if (service == 'Book a Walk' ||
+        service == 'One-Time Walk' ||
+        service == 'Regular Walks') {
+      final type = service == 'Regular Walks'
+          ? WalkBookingType.regular
+          : WalkBookingType.oneTime;
+
+      Navigator.of(context).push(
+        MaterialPageRoute<void>(
+          builder: (_) => BookingStartScreen(initialType: type),
+        ),
+      );
+      return;
+    }
+
+    if (service == 'My Dogs') {
+      _showMessage(
+        'Dog profiles will be connected in the next step.',
+      );
+    }
   }
 
   @override
@@ -112,14 +144,12 @@ class _HomeScreenState extends State<HomeScreen> {
       _buildPlaceholderTab(
         icon: Icons.calendar_month_rounded,
         title: 'My Bookings',
-        description:
-            'Your upcoming and past dog walks will appear here.',
+        description: 'Your upcoming and past dog walks will appear here.',
       ),
       _buildPlaceholderTab(
         icon: Icons.person_outline_rounded,
         title: 'Your Profile',
-        description:
-            'Manage your personal details, dogs and saved addresses.',
+        description: 'Manage your personal details, dogs and saved addresses.',
       ),
     ];
 
@@ -134,10 +164,7 @@ class _HomeScreenState extends State<HomeScreen> {
         destinations: const [
           NavigationDestination(
             icon: Icon(Icons.home_outlined),
-            selectedIcon: Icon(
-              Icons.home_rounded,
-              color: dojoOrange,
-            ),
+            selectedIcon: Icon(Icons.home_rounded, color: dojoOrange),
             label: 'Home',
           ),
           NavigationDestination(
@@ -150,10 +177,7 @@ class _HomeScreenState extends State<HomeScreen> {
           ),
           NavigationDestination(
             icon: Icon(Icons.person_outline_rounded),
-            selectedIcon: Icon(
-              Icons.person_rounded,
-              color: dojoOrange,
-            ),
+            selectedIcon: Icon(Icons.person_rounded, color: dojoOrange),
             label: 'Profile',
           ),
         ],
@@ -239,8 +263,7 @@ class _HomeScreenState extends State<HomeScreen> {
                       const SizedBox(width: 10),
                       Expanded(
                         child: Column(
-                          crossAxisAlignment:
-                              CrossAxisAlignment.start,
+                          crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
                             const Text(
                               'WALK LOCATION',
@@ -362,10 +385,7 @@ class _HomeScreenState extends State<HomeScreen> {
               const SizedBox(height: 6),
               const Text(
                 'Choose the right walk for your dog.',
-                style: TextStyle(
-                  fontSize: 13,
-                  color: Colors.black54,
-                ),
+                style: TextStyle(fontSize: 13, color: Colors.black54),
               ),
               const SizedBox(height: 16),
               _ServiceCard(
@@ -487,23 +507,6 @@ class _HomeScreenState extends State<HomeScreen> {
         ),
       ),
     );
-  }
-
-  void _openService(String service) {
-    if (service == 'Book a Walk' ||
-        service == 'One-Time Walk' ||
-        service == 'Regular Walks') {
-      _showMessage(
-        '$service selected. The new booking flow is the next step.',
-      );
-      return;
-    }
-
-    if (service == 'My Dogs') {
-      _showMessage(
-        'Dog profiles will be connected to your account next.',
-      );
-    }
   }
 }
 
