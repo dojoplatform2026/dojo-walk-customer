@@ -5,18 +5,17 @@ import 'package:flutter/material.dart';
 
 import '../../app/theme.dart';
 import '../home/home_screen.dart';
-import '../onboarding/onboarding_screen.dart';
 
 class SplashScreen extends StatefulWidget {
   const SplashScreen({super.key});
 
   @override
-  State<SplashScreen> createState() =>
-      _SplashScreenState();
+  State<SplashScreen> createState() => _SplashScreenState();
 }
 
 class _SplashScreenState extends State<SplashScreen> {
   Timer? _timer;
+  bool _isNavigating = false;
 
   @override
   void initState() {
@@ -24,25 +23,38 @@ class _SplashScreenState extends State<SplashScreen> {
 
     _timer = Timer(
       const Duration(seconds: 2),
-      _checkAuth,
+      _openHome,
     );
   }
 
-  void _checkAuth() {
-    if (!mounted) return;
+  Future<void> _openHome() async {
+    if (!mounted || _isNavigating) return;
 
-    final user = FirebaseAuth.instance.currentUser;
+    _isNavigating = true;
 
-    final nextScreen = user != null
-        ? const HomeScreen()
-        : const OnboardingScreen();
+    try {
+      // Firebase login session ko check karein.
+      // Login na hone par bhi Guest Home khulega.
+      final user = FirebaseAuth.instance.currentUser;
 
-    Navigator.pushReplacement(
-      context,
-      MaterialPageRoute(
-        builder: (_) => nextScreen,
-      ),
-    );
+      if (!mounted) return;
+
+      Navigator.of(context).pushReplacement(
+        MaterialPageRoute<void>(
+          builder: (_) => const HomeScreen(),
+        ),
+      );
+    } catch (_) {
+      _isNavigating = false;
+
+      if (!mounted) return;
+
+      Navigator.of(context).pushReplacement(
+        MaterialPageRoute<void>(
+          builder: (_) => const HomeScreen(),
+        ),
+      );
+    }
   }
 
   @override
@@ -58,16 +70,14 @@ class _SplashScreenState extends State<SplashScreen> {
       body: SafeArea(
         child: Center(
           child: Column(
-            mainAxisAlignment:
-                MainAxisAlignment.center,
+            mainAxisAlignment: MainAxisAlignment.center,
             children: [
               Container(
                 width: 112,
                 height: 112,
                 decoration: BoxDecoration(
                   color: DojoWalkTheme.primary,
-                  borderRadius:
-                      BorderRadius.circular(32),
+                  borderRadius: BorderRadius.circular(32),
                   boxShadow: [
                     BoxShadow(
                       color: DojoWalkTheme.primary
@@ -89,9 +99,7 @@ class _SplashScreenState extends State<SplashScreen> {
                   ),
                 ),
               ),
-
               const SizedBox(height: 24),
-
               const Text(
                 'DOJO WALK',
                 style: TextStyle(
@@ -101,9 +109,7 @@ class _SplashScreenState extends State<SplashScreen> {
                   letterSpacing: 1.4,
                 ),
               ),
-
               const SizedBox(height: 8),
-
               const Text(
                 'Happy walks. Happy dogs.',
                 style: TextStyle(
@@ -112,9 +118,7 @@ class _SplashScreenState extends State<SplashScreen> {
                   fontWeight: FontWeight.w500,
                 ),
               ),
-
               const SizedBox(height: 42),
-
               const SizedBox(
                 width: 24,
                 height: 24,
